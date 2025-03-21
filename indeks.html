@@ -102,8 +102,8 @@
                 history.unshift(query);
                 if (history.length > 10) history.pop();
                 localStorage.setItem("searchHistory", JSON.stringify(history));
-                loadSearchHistory();
             }
+            loadSearchHistory();
         }
 
         function loadSearchHistory() {
@@ -127,36 +127,33 @@
         }
 
         function setSearchQuery(query) {
-            let searchInput = document.querySelector(".gsc-input input");
+            let searchInput = document.querySelector("input.gsc-input");
             if (searchInput) {
                 searchInput.value = query;
                 setTimeout(() => {
-                    document.querySelector(".gsc-search-button").click();
+                    let searchButton = document.querySelector("button.gsc-search-button");
+                    if (searchButton) searchButton.click();
                 }, 500);
             }
         }
 
         function trackSearch() {
-            let lastQuery = "";
-            setInterval(() => {
-                let searchInput = document.querySelector(".gsc-input input");
-                let searchButton = document.querySelector(".gsc-search-button");
-                
-                if (searchInput && searchButton) {
-                    let currentQuery = searchInput.value.trim();
-                    if (currentQuery !== "" && currentQuery !== lastQuery) {
-                        searchButton.addEventListener("click", () => {
-                            saveSearchHistory(currentQuery);
-                            lastQuery = currentQuery;
-                        }, { once: true });
+            let searchInput = document.querySelector("input.gsc-input");
+            let searchButton = document.querySelector("button.gsc-search-button");
+            
+            if (searchInput && searchButton) {
+                searchButton.addEventListener("click", () => {
+                    let query = searchInput.value.trim();
+                    if (query !== "") {
+                        saveSearchHistory(query);
                     }
-                }
-            }, 1000);
+                });
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             loadSearchHistory();
-            trackSearch();
+            setInterval(trackSearch, 1000);
         });
     </script>
 
