@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
+            background-color: #ffffff;
             color: #333;
             text-align: center;
             padding: 20px;
@@ -17,12 +17,12 @@
 
         .container {
             width: 90%;
-            max-width: 600px;
+            max-width: 800px;
             margin: auto;
             background: #ffffff;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             position: relative;
         }
 
@@ -73,6 +73,25 @@
             padding: 5px;
             border-radius: 50%;
         }
+
+        .search-results {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .search-results a {
+            display: block;
+            padding: 10px;
+            background: #f8f8f8;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .search-results a:hover {
+            background: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +107,8 @@
             <ul id="historyList"></ul>
             <button onclick="clearHistory()">Hapus Riwayat</button>
         </div>
+        
+        <div class="search-results" id="searchResults"></div>
     </div>
 
     <script>
@@ -102,8 +123,8 @@
                 history.unshift(query);
                 if (history.length > 10) history.pop();
                 localStorage.setItem("searchHistory", JSON.stringify(history));
+                loadSearchHistory();
             }
-            loadSearchHistory();
         }
 
         function loadSearchHistory() {
@@ -127,33 +148,17 @@
         }
 
         function setSearchQuery(query) {
-            let searchInput = document.querySelector("input.gsc-input");
+            let searchInput = document.querySelector(".gsc-input input");
             if (searchInput) {
                 searchInput.value = query;
                 setTimeout(() => {
-                    let searchButton = document.querySelector("button.gsc-search-button");
-                    if (searchButton) searchButton.click();
+                    document.querySelector(".gsc-search-button").click();
                 }, 500);
-            }
-        }
-
-        function trackSearch() {
-            let searchInput = document.querySelector("input.gsc-input");
-            let searchButton = document.querySelector("button.gsc-search-button");
-            
-            if (searchInput && searchButton) {
-                searchButton.addEventListener("click", () => {
-                    let query = searchInput.value.trim();
-                    if (query !== "") {
-                        saveSearchHistory(query);
-                    }
-                });
             }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             loadSearchHistory();
-            setInterval(trackSearch, 1000);
         });
     </script>
 
