@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Engine Jurnal</title>
+    <script async src="https://cse.google.com/cse.js?cx=332c680f2381f4787"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .history-menu {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            width: 250px;
+            display: none;
+        }
+
+        .history-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .history-menu li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .history-menu li:hover {
+            background: #f0f0f0;
+        }
+
+        .history-menu button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: red;
+            color: white;
+            cursor: pointer;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .history-icon {
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            background: #ddd;
+            padding: 5px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📚 Search Engine Jurnal</h1>
+        <p>Cari jurnal ilmiah dengan mudah dan cepat.</p>
+        <div class="gcse-search"></div>
+        
+        <div class="history-icon" onclick="toggleHistoryMenu()">🕘</div>
+        
+        <div class="history-menu" id="historyMenu">
+            <ul id="historyList"></ul>
+            <button onclick="clearHistory()">Hapus Riwayat</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleHistoryMenu() {
+            let menu = document.getElementById("historyMenu");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+
+        function saveSearchHistory(query) {
+            let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+            if (!history.includes(query) && query.length > 3) {
+                history.unshift(query);
+                if (history.length > 10) history.pop();
+                localStorage.setItem("searchHistory", JSON.stringify(history));
+                loadSearchHistory();
+            }
+        }
+
+        function loadSearchHistory() {
+            let historyList = document.getElementById("historyList");
+            historyList.innerHTML = "";
+            let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+            
+            history.forEach(query => {
+                let li = document.createElement("li");
+                li.textContent = query;
+                li.onclick = function() {
+                    setSearchQuery(query);
+                };
+                historyList.appendChild(li);
+            });
+        }
+
+        function clearHistory() {
+            localStorage.removeItem("searchHistory");
+            loadSearchHistory();
+        }
+
+        function setSearchQuery(query) {
+            let searchInput = document.querySelector(".gsc-input input");
+            if (searchInput) {
+                searchInput.value = query;
+                setTimeout(() => {
+                    document.querySelector(".gsc-search-button").click();
+                }, 500);
+            }
+        }
+
+        function trackSearch() {
+            let lastQuery = "";
+            setInterval(() => {
+                let searchInput = document.querySelector(".gsc-input input");
+                let searchButton = document.querySelector(".gsc-search-button");
+                
+                if (searchInput && searchButton) {
+                    let currentQuery = searchInput.value.trim();
+                    if (currentQuery !== "" && currentQuery !== lastQuery) {
+                        searchButton.addEventListener("click", () => {
+                            saveSearchHistory(currentQuery);
+                            lastQuery = currentQuery;
+                        }, { once: true });
+                    }
+                }
+            }, 1000);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadSearchHistory();
+            trackSearch();
+        });
+    </script>
+
+</body>
+</html>
