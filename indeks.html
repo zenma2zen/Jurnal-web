@@ -26,6 +26,10 @@
             position: relative;
         }
 
+        .filter-container {
+            margin-bottom: 20px;
+        }
+
         .history-menu {
             position: absolute;
             top: 60px;
@@ -95,6 +99,13 @@
     <div class="container">
         <h1>📚 Search Engine Jurnal</h1>
         <p>Cari jurnal ilmiah dengan mudah dan cepat.</p>
+        
+        <div class="filter-container">
+            <label for="yearFilter">Filter Tahun:</label>
+            <input type="number" id="yearFilter" placeholder="Masukkan tahun" min="1900" max="2025">
+            <button onclick="applyYearFilter()">Terapkan</button>
+        </div>
+        
         <div class="gcse-search"></div>
         
         <div class="history-icon" onclick="toggleHistoryMenu()">🕘</div>
@@ -148,6 +159,19 @@
                 setTimeout(() => {
                     document.querySelector(".gsc-search-button").click();
                 }, 500);
+            }
+        }
+
+        function applyYearFilter() {
+            let year = document.getElementById("yearFilter").value;
+            if (year) {
+                let searchInput = document.querySelector(".gsc-input input");
+                if (searchInput) {
+                    searchInput.value += " " + year;
+                    setTimeout(() => {
+                        document.querySelector(".gsc-search-button").click();
+                    }, 500);
+                }
             }
         }
 
