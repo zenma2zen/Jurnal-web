@@ -27,6 +27,7 @@
             if (data.items) {
                 data.items.forEach(item => {
                     let resultItem = document.createElement("div");
+                    resultItem.className = "result-item";
                     resultItem.innerHTML = `
                         <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
                         <p>${item.snippet}</p>
@@ -34,7 +35,7 @@
                     resultsContainer.appendChild(resultItem);
                 });
             } else {
-                resultsContainer.innerHTML = "<p>Tidak ada hasil ditemukan.</p>";
+                resultsContainer.innerHTML = "<p class='no-results'>Tidak ada hasil ditemukan.</p>";
             }
         }
 
@@ -43,18 +44,13 @@
             let year = document.getElementById("yearFilter").value;
             if (query) {
                 searchJournals(query, year);
-                saveSearchHistory(query);
             }
         }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            loadSearchHistory();
-        });
     </script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #eef1f5;
+            background-color: #f0f4f8;
             color: #333;
             text-align: center;
             padding: 20px;
@@ -63,7 +59,7 @@
 
         .container {
             width: 90%;
-            max-width: 800px;
+            max-width: 700px;
             margin: auto;
             background: #ffffff;
             padding: 30px;
@@ -74,44 +70,80 @@
 
         .filter-container {
             margin-bottom: 20px;
-            background: #d1d9e6;
             padding: 10px;
-            border-radius: 10px;
-            display: inline-block;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .filter-container input, .filter-container button {
+        .filter-container input {
             background: #fff;
             border: 1px solid #ccc;
             padding: 8px;
             border-radius: 5px;
+            width: 150px;
+            text-align: center;
         }
 
         .search-box {
-            margin: 20px 0;
             display: flex;
             justify-content: center;
+            gap: 10px;
         }
 
         .search-box input {
             width: 70%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 16px;
         }
 
         .search-box button {
-            padding: 10px;
+            padding: 12px;
             background: #007bff;
             border: none;
             color: white;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-box button:hover {
+            background: #0056b3;
         }
 
         #searchResults {
             margin-top: 20px;
             text-align: left;
+        }
+
+        .result-item {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        }
+
+        .result-item h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .result-item a {
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .result-item a:hover {
+            color: #0056b3;
+        }
+
+        .no-results {
+            font-size: 16px;
+            color: #ff4d4d;
         }
     </style>
 </head>
