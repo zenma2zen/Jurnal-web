@@ -13,6 +13,8 @@
     let currentPage = 1;
     let lastQuery = "";
     let totalResults = 0;
+    let selectedYear = "";
+    let showCitationTools = false;
 
     async function fetchLatestNews() {
       try {
@@ -22,7 +24,6 @@
         newsContainer.innerHTML = `
           <div class="section-header">
             <h3>🌍 Berita Internasional Terkini</h3>
-            <button class="refresh-btn" onclick="fetchLatestNews()">🔄 Segarkan</button>
           </div>
           <div class="news-grid" id="newsGrid"></div>
         `;
@@ -61,7 +62,14 @@
       lastQuery = query;
       currentPage = page;
       const startIndex = (page - 1) * 10 + 1;
-      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${CX}&key=${API_KEY}&start=${startIndex}`;
+      
+      // Tambahkan filter tahun jika dipilih
+      let searchQuery = query;
+      if (selectedYear) {
+        searchQuery += ` after:${selectedYear}-01-01 before:${selectedYear}-12-31`;
+      }
+      
+      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(searchQuery)}&cx=${CX}&key=${API_KEY}&start=${startIndex}`;
 
       document.getElementById("searchResults").innerHTML = `
         <div class="loading-spinner">
@@ -89,9 +97,14 @@
       resultsContainer.innerHTML = "";
 
       if (data.items && data.items.length > 0) {
+        let yearFilterInfo = selectedYear ? `<span class="year-filter-info">(Filter tahun: ${selectedYear})</span>` : "";
+        
         resultsContainer.innerHTML = `
           <div class="results-header">
-            <h3>Hasil Pencarian untuk "${lastQuery}"</h3>
+            <div>
+              <h3>Hasil Pencarian untuk "${lastQuery}"</h3>
+              ${yearFilterInfo}
+            </div>
             <p class="results-count">${totalResults} hasil ditemukan</p>
           </div>
           <div class="results-grid" id="resultsGrid"></div>
@@ -107,6 +120,9 @@
               <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
               <p class="result-url">${new URL(item.link).hostname.replace('www.', '')}</p>
               <p class="result-snippet">${item.snippet}</p>
+              <div class="result-meta">
+                ${extractYearFromResult(item.snippet) ? `<span class="result-year">${extractYearFromResult(item.snippet)}</span>` : ''}
+              </div>
             </div>
           `;
           resultsGrid.appendChild(resultItem);
@@ -114,14 +130,25 @@
 
         displayPagination();
       } else {
+        let noResultsMessage = selectedYear 
+          ? `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" pada tahun ${selectedYear}</p>`
+          : `<p>Tidak ada hasil ditemukan untuk "${lastQuery}"</p>`;
+        
         resultsContainer.innerHTML = `
           <div class="no-results">
             <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" alt="No results" width="100">
-            <h3>Tidak ada hasil ditemukan untuk "${lastQuery}"</h3>
-            <p>Coba gunakan kata kunci yang berbeda atau lebih spesifik</p>
+            <h3>Tidak ada hasil ditemukan</h3>
+            ${noResultsMessage}
+            <p>Coba gunakan kata kunci yang berbeda atau hapus filter tahun</p>
           </div>
         `;
       }
+    }
+
+    // Fungsi untuk mengekstrak tahun dari snippet hasil pencarian
+    function extractYearFromResult(snippet) {
+      const yearMatch = snippet.match(/(19|20)\d{2}/);
+      return yearMatch ? yearMatch[0] : null;
     }
 
     function performSearch() {
@@ -204,8 +231,69 @@
       }
     }
 
+    // Handle perubahan filter tahun
+    function handleYearFilter() {
+      selectedYear = document.getElementById("yearFilter").value;
+      if (lastQuery) {
+        currentPage = 1;
+        searchJournals(lastQuery, currentPage);
+      }
+    }
+
+    // Generate opsi tahun untuk filter (dari 2000 hingga tahun sekarang)
+    function generateYearOptions() {
+      const yearSelect = document.getElementById("yearFilter");
+      const currentYear = new Date().getFullYear();
+      
+      // Tambahkan opsi default
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Semua Tahun";
+      yearSelect.appendChild(defaultOption);
+      
+      // Tambahkan opsi tahun dari 2000 hingga sekarang
+      for (let year = currentYear; year >= 2000; year--) {
+        const option = document.createElement("option");
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    // Fungsi untuk Citation Tools
+    function toggleCitationTools() {
+      showCitationTools = !showCitationTools;
+      if (showCitationTools) {
+        document.getElementById("citationTools").style.display = "block";
+        document.getElementById("searchResults").style.display = "none";
+        document.getElementById("newsContainer").style.display = "none";
+      } else {
+        document.getElementById("citationTools").style.display = "none";
+        document.getElementById("searchResults").style.display = "block";
+        document.getElementById("newsContainer").style.display = "block";
+      }
+    }
+
+    function generateCitation() {
+      const author = document.getElementById("citationAuthor").value || "Penulis Tidak Diketahui";
+      const year = document.getElementById("citationYear").value || new Date().getFullYear();
+      const title = document.getElementById("citationTitle").value || "Judul Tidak Diketahui";
+      const journal = document.getElementById("citationJournal").value || "Jurnal Tidak Diketahui";
+      
+      const apaCitation = `${author}. (${year}). ${title}. <i>${journal}</i>.`;
+      
+      document.getElementById("citationResult").innerHTML = apaCitation;
+    }
+
+    function copyCitation() {
+      const citationText = document.getElementById("citationResult").textContent;
+      navigator.clipboard.writeText(citationText);
+      alert("Kutipan telah disalin ke clipboard!");
+    }
+
     window.onload = function() {
       fetchLatestNews();
+      generateYearOptions();
       
       // Set dark mode from localStorage
       if (localStorage.getItem("darkMode") === "true") {
@@ -285,13 +373,17 @@
       margin-bottom: 20px;
     }
 
+    .search-container {
+      max-width: 800px;
+      margin: 0 auto 30px;
+    }
+
     .search-box {
       display: flex;
-      max-width: 600px;
-      margin: 0 auto 30px;
       box-shadow: var(--shadow);
       border-radius: var(--border-radius);
       overflow: hidden;
+      margin-bottom: 15px;
     }
 
     #searchInput {
@@ -321,6 +413,34 @@
       background-color: var(--secondary-color);
     }
 
+    .filter-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .year-filter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .year-filter label {
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    #yearFilter {
+      padding: 8px 12px;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--text-light);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      cursor: pointer;
+    }
+
     .shortcuts {
       display: flex;
       justify-content: center;
@@ -340,6 +460,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      cursor: pointer;
     }
 
     .shortcut:hover {
@@ -375,10 +496,22 @@
     .results-header {
       margin-bottom: 20px;
       text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .results-header h3 {
       color: var(--primary-color);
+      margin-right: 10px;
+    }
+
+    .year-filter-info {
+      color: var(--text-light);
+      font-size: 14px;
+      font-style: italic;
     }
 
     .results-count {
@@ -425,6 +558,21 @@
 
     .result-snippet {
       color: var(--text-color);
+      margin-bottom: 10px;
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .result-year {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
     }
 
     /* News Container */
@@ -437,29 +585,11 @@
     }
 
     .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       margin-bottom: 20px;
     }
 
     .section-header h3 {
       color: var(--primary-color);
-    }
-
-    .refresh-btn {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: var(--border-radius);
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.3s;
-    }
-
-    .refresh-btn:hover {
-      background-color: var(--secondary-color);
     }
 
     .news-grid {
@@ -586,6 +716,60 @@
       margin-bottom: 20px;
     }
 
+    /* Citation Tools Styles */
+    #citationTools {
+      display: none;
+      margin-top: 30px;
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .citation-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .citation-form-group {
+      margin-bottom: 15px;
+    }
+
+    .citation-form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .citation-form input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .citation-result {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: var(--light-color);
+      border-radius: var(--border-radius);
+      font-family: 'Times New Roman', serif;
+    }
+
+    .dark-mode .citation-result {
+      background-color: var(--card-bg);
+    }
+
+    .citation-actions {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .container {
@@ -619,6 +803,15 @@
         width: 100%;
         text-align: center;
       }
+      
+      .filter-container {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .citation-form {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -629,19 +822,66 @@
       <p class="tagline">Platform Pencarian Jurnal Ilmiah dan Berita Terkini</p>
     </header>
 
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
-      <button onclick="performSearch()">Cari</button>
+    <div class="search-container">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
+        <button onclick="performSearch()">Cari</button>
+      </div>
+      
+      <div class="filter-container">
+        <div class="year-filter">
+          <label for="yearFilter">Filter Tahun:</label>
+          <select id="yearFilter" onchange="handleYearFilter()">
+            <!-- Opsi tahun akan di-generate oleh JavaScript -->
+          </select>
+        </div>
+      </div>
     </div>
 
     <div class="shortcuts">
+      <button class="shortcut" onclick="toggleCitationTools()">📝 Citation Tools</button>
       <a href="https://sma-waha1.sch.id/" target="_blank" class="shortcut">🏫 Website Sekolah</a>
       <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="shortcut">📖 Perpustakaan Digital</a>
-      <a href="#" onclick="fetchLatestNews(); return false;" class="shortcut">🔄 Perbarui Berita</a>
     </div>
 
     <div id="searchResults"></div>
     <div id="newsContainer"></div>
+
+    <!-- Citation Tools Section -->
+    <div id="citationTools">
+      <h2>Citation Generator</h2>
+      <p>Generate kutipan dalam format APA (7th Edition)</p>
+      
+      <div class="citation-form">
+        <div class="citation-form-group">
+          <label for="citationAuthor">Nama Penulis:</label>
+          <input type="text" id="citationAuthor" placeholder="Contoh: Smith, J.">
+        </div>
+        <div class="citation-form-group">
+          <label for="citationYear">Tahun Publikasi:</label>
+          <input type="number" id="citationYear" placeholder="Contoh: 2023">
+        </div>
+        <div class="citation-form-group">
+          <label for="citationTitle">Judul Artikel:</label>
+          <input type="text" id="citationTitle" placeholder="Judul artikel">
+        </div>
+        <div class="citation-form-group">
+          <label for="citationJournal">Nama Jurnal:</label>
+          <input type="text" id="citationJournal" placeholder="Nama jurnal">
+        </div>
+      </div>
+      
+      <button onclick="generateCitation()">Generate Citation</button>
+      
+      <div class="citation-result" id="citationResult">
+        Hasil kutipan akan muncul di sini...
+      </div>
+      
+      <div class="citation-actions">
+        <button onclick="copyCitation()">Salin Kutipan</button>
+        <button onclick="toggleCitationTools()">Kembali ke Pencarian</button>
+      </div>
+    </div>
   </div>
 
   <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
