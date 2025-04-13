@@ -14,7 +14,7 @@
     let lastQuery = "";
     let totalResults = 0;
     let selectedYear = "";
-    let showCitationTools = false;
+    let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
 
     async function fetchLatestNews() {
       try {
@@ -83,6 +83,7 @@
         .then(data => {
           totalResults = data.searchInformation?.totalResults || 0;
           displayResults(data);
+          addToSearchHistory(query);
         })
         .catch(error => {
           console.error("Error fetching search results:", error);
@@ -260,103 +261,99 @@
       }
     }
 
-    // ===== ENHANCED APA CITATION TOOLS =====
-    function toggleCitationTools() {
-      showCitationTools = !showCitationTools;
-      if (showCitationTools) {
-        document.getElementById("citationTools").style.display = "block";
+    // ===== SEARCH HISTORY FUNCTIONS =====
+    function addToSearchHistory(query) {
+      // Check if query already exists in history
+      const existingIndex = searchHistory.findIndex(item => item.query === query);
+      
+      if (existingIndex !== -1) {
+        // Update timestamp if exists
+        searchHistory[existingIndex].timestamp = new Date().toISOString();
+      } else {
+        // Add new entry if doesn't exist
+        searchHistory.unshift({
+          query: query,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Limit history to 10 items
+        if (searchHistory.length > 10) {
+          searchHistory = searchHistory.slice(0, 10);
+        }
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      
+      // Update history display
+      displaySearchHistory();
+    }
+
+    function displaySearchHistory() {
+      const historyContainer = document.getElementById("historyContainer");
+      if (!historyContainer) return;
+      
+      if (searchHistory.length === 0) {
+        historyContainer.innerHTML = '<p class="no-history">Belum ada riwayat pencarian</p>';
+        return;
+      }
+      
+      let html = '<div class="history-list">';
+      
+      searchHistory.forEach((item, index) => {
+        const date = new Date(item.timestamp);
+        const formattedDate = date.toLocaleString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        html += `
+          <div class="history-item">
+            <div class="history-query" onclick="searchFromHistory('${item.query}')">
+              ${index + 1}. ${item.query}
+            </div>
+            <div class="history-date">${formattedDate}</div>
+            <button class="history-delete" onclick="deleteHistoryItem(${index})">×</button>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      historyContainer.innerHTML = html;
+    }
+
+    function searchFromHistory(query) {
+      document.getElementById("searchInput").value = query;
+      searchJournals(query);
+    }
+
+    function deleteHistoryItem(index) {
+      searchHistory.splice(index, 1);
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      displaySearchHistory();
+    }
+
+    function clearSearchHistory() {
+      searchHistory = [];
+      localStorage.removeItem('searchHistory');
+      displaySearchHistory();
+    }
+
+    function toggleHistory() {
+      const historySection = document.getElementById("historySection");
+      if (historySection.style.display === "none") {
+        historySection.style.display = "block";
         document.getElementById("searchResults").style.display = "none";
         document.getElementById("newsContainer").style.display = "none";
+        displaySearchHistory();
       } else {
-        document.getElementById("citationTools").style.display = "none";
+        historySection.style.display = "none";
         document.getElementById("searchResults").style.display = "block";
         document.getElementById("newsContainer").style.display = "block";
       }
-    }
-
-    function formatAuthors(authorsInput) {
-      const authors = authorsInput.split(',').map(a => a.trim());
-      
-      if (authors.length === 0) return "Penulis Tidak Diketahui";
-      if (authors.length === 1) return authors[0];
-      
-      return authors.slice(0, -1).join(', ') + ', & ' + authors[authors.length - 1];
-    }
-
-    function formatTitle(title) {
-      // Sentence case - capitalize first letter of first word and proper nouns
-      return title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
-    }
-
-    function formatJournalTitle(journal) {
-      // Title case - capitalize major words
-      const smallWords = /^(a|an|and|as|at|but|by|en|for|if|in|of|on|or|the|to|v\.?|via|vs\.?)$/i;
-      const words = journal.split(' ');
-      
-      return words.map((word, index) => {
-        // Skip small words unless they're the first/last word
-        if (index > 0 && index < words.length - 1 && smallWords.test(word)) {
-          return word.toLowerCase();
-        }
-        
-        // Capitalize the rest
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-      }).join(' ');
-    }
-
-    function generateCitation() {
-      const author = document.getElementById("citationAuthor").value.trim();
-      const year = document.getElementById("citationYear").value.trim();
-      const title = document.getElementById("citationTitle").value.trim();
-      const journal = document.getElementById("citationJournal").value.trim();
-      const volume = document.getElementById("citationVolume").value.trim();
-      const issue = document.getElementById("citationIssue").value.trim();
-      const page = document.getElementById("citationPage").value.trim();
-      const doi = document.getElementById("citationDOI").value.trim();
-      
-      // Validate required fields
-      if (!author || !year || !title || !journal) {
-        alert("Harap isi setidaknya Penulis, Tahun, Judul, dan Nama Jurnal");
-        return;
-      }
-
-      // Format authors (handle multiple authors separated by commas)
-      const authors = formatAuthors(author);
-
-      // Format title (sentence case)
-      const formattedTitle = formatTitle(title);
-
-      // Format journal title (title case)
-      const formattedJournal = formatJournalTitle(journal);
-
-      // Build APA citation
-      let apaCitation = `${authors} (${year}). ${formattedTitle}. `;
-      apaCitation += `<i>${formattedJournal}</i>`;
-      
-      if (volume) {
-        apaCitation += `, <i>${volume}</i>`;
-        if (issue) {
-          apaCitation += `(${issue})`;
-        }
-      }
-      
-      if (page) {
-        apaCitation += `, ${page}`;
-      }
-      
-      if (doi) {
-        apaCitation += `. https://doi.org/${doi.replace('https://doi.org/', '')}`;
-      } else {
-        apaCitation += ".";
-      }
-
-      document.getElementById("citationResult").innerHTML = apaCitation;
-    }
-
-    function copyCitation() {
-      const citationText = document.getElementById("citationResult").textContent;
-      navigator.clipboard.writeText(citationText);
-      alert("Kutipan APA telah disalin ke clipboard!");
     }
 
     window.onload = function() {
@@ -784,8 +781,8 @@
       margin-bottom: 20px;
     }
 
-    /* Enhanced Citation Tools Styles */
-    #citationTools {
+    /* Search History Section */
+    #historySection {
       display: none;
       margin-top: 30px;
       background-color: var(--card-bg);
@@ -794,82 +791,80 @@
       box-shadow: var(--shadow);
     }
 
-    .citation-header {
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 20px;
     }
 
-    .citation-header h2 {
+    .history-header h2 {
       color: var(--primary-color);
-      margin-bottom: 5px;
     }
 
-    .citation-header p {
-      color: var(--text-light);
-      font-size: 14px;
-    }
-
-    .citation-form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .citation-form-group {
-      margin-bottom: 15px;
-    }
-
-    .citation-form label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
-      font-size: 14px;
-    }
-
-    .citation-form label.required::after {
-      content: " *";
-      color: #e53935;
-    }
-
-    .citation-form input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius);
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-size: 14px;
-    }
-
-    .citation-form input:focus {
-      outline: 2px solid var(--accent-color);
-    }
-
-    .citation-result {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: var(--light-color);
-      border-radius: var(--border-radius);
-      font-family: 'Times New Roman', serif;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-
-    .dark-mode .citation-result {
-      background-color: var(--card-bg);
-    }
-
-    .citation-actions {
-      margin-top: 15px;
+    .history-actions {
       display: flex;
       gap: 10px;
     }
 
-    .citation-note {
-      margin-top: 15px;
-      font-size: 12px;
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      background-color: var(--bg-color);
+      border-radius: var(--border-radius);
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      background-color: var(--light-color);
+    }
+
+    .dark-mode .history-item:hover {
+      background-color: var(--dark-color);
+      opacity: 0.9;
+    }
+
+    .history-query {
+      flex: 1;
+      cursor: pointer;
+      color: var(--primary-color);
+    }
+
+    .history-query:hover {
+      text-decoration: underline;
+    }
+
+    .history-date {
       color: var(--text-light);
-      font-style: italic;
+      font-size: 13px;
+      margin: 0 15px;
+    }
+
+    .history-delete {
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 5px;
+    }
+
+    .history-delete:hover {
+      color: #e53935;
+    }
+
+    .no-history {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-light);
     }
 
     /* Responsive */
@@ -911,8 +906,21 @@
         align-items: flex-start;
       }
 
-      .citation-form {
-        grid-template-columns: 1fr;
+      .history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .history-date {
+        margin-left: 0;
+        margin-right: 0;
+        font-size: 12px;
+      }
+
+      .history-actions {
+        width: 100%;
+        justify-content: flex-end;
       }
     }
   </style>
@@ -941,7 +949,7 @@
     </div>
 
     <div class="shortcuts">
-      <button class="shortcut" onclick="toggleCitationTools()">📝 Citation Tools</button>
+      <button class="shortcut" onclick="toggleHistory()">🕒 Riwayat Pencarian</button>
       <a href="https://sma-waha1.sch.id/" target="_blank" class="shortcut">🏫 Website Sekolah</a>
       <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="shortcut">📖 Perpustakaan Digital</a>
     </div>
@@ -949,63 +957,17 @@
     <div id="searchResults"></div>
     <div id="newsContainer"></div>
 
-    <!-- Enhanced Citation Tools Section -->
-    <div id="citationTools">
-      <div class="citation-header">
-        <h2>APA Citation Generator (7th Edition)</h2>
-        <p>Generate kutipan jurnal dalam format APA Style</p>
-      </div>
-      
-      <div class="citation-form">
-        <div class="citation-form-group">
-          <label for="citationAuthor" class="required">Penulis:</label>
-          <input type="text" id="citationAuthor" placeholder="Contoh: Smith, J., & Johnson, M.">
-          <p class="citation-note">Pisahkan beberapa penulis dengan koma</p>
-        </div>
-        <div class="citation-form-group">
-          <label for="citationYear" class="required">Tahun:</label>
-          <input type="number" id="citationYear" placeholder="Contoh: 2023">
-        </div>
-        <div class="citation-form-group">
-          <label for="citationTitle" class="required">Judul Artikel:</label>
-          <input type="text" id="citationTitle" placeholder="Judul artikel jurnal">
-        </div>
-        <div class="citation-form-group">
-          <label for="citationJournal" class="required">Nama web Jurnal:</label>
-          <input type="text" id="citationJournal" placeholder="Nama jurnal">
-        </div>
-        <div class="citation-form-group">
-          <label for="citationVolume">Volume:</label>
-          <input type="text" id="citationVolume" placeholder="Contoh: 12">
-        </div>
-        <div class="citation-form-group">
-          <label for="citationIssue">Issue/Nomor:</label>
-          <input type="text" id="citationIssue" placeholder="Contoh: 3">
-        </div>
-        <div class="citation-form-group">
-          <label for="citationPage">Halaman:</label>
-          <input type="text" id="citationPage" placeholder="Contoh: 45-60">
-        </div>
-        <div class="citation-form-group">
-          <label for="citationDOI">DOI/URL:</label>
-          <input type="text" id="citationDOI" placeholder="Contoh: 10.1234/abcd">
+    <!-- Search History Section -->
+    <div id="historySection">
+      <div class="history-header">
+        <h2>Riwayat Pencarian</h2>
+        <div class="history-actions">
+          <button class="shortcut" onclick="clearSearchHistory()">🧹 Hapus Semua</button>
+          <button class="shortcut" onclick="toggleHistory()">🔍 Kembali ke Pencarian</button>
         </div>
       </div>
-      
-      <button onclick="generateCitation()" class="shortcut">Generate Citation</button>
-      
-      <div class="citation-result" id="citationResult">
-        Contoh format: 
-        Smith, J., & Johnson, M. (2023). Judul artikel penelitian. <i>Nama Jurnal Akademik</i>, <i>12</i>(3), 45-60. https://doi.org/10.1234/abcd
-      </div>
-      
-      <div class="citation-actions">
-        <button onclick="copyCitation()" class="shortcut">Salin Kutipan</button>
-        <button onclick="toggleCitationTools()" class="shortcut back-button">Kembali ke Pencarian</button>
-      </div>
-      
-      <div class="citation-note">
-        * Wajib diisi. Format mengikuti APA Style 7th Edition.
+      <div id="historyContainer">
+        <!-- History items will be inserted here by JavaScript -->
       </div>
     </div>
   </div>
