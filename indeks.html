@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wahasa Search - Platform Pencarian Jurnal Ilmiah</title>
+  <title>WHARSA - Wahasa Academic Reference Search Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
     const API_KEY = "AIzaSyDM4a0GLSA3lMRYJSTzgoUfG88OZI-1MJI";
@@ -221,7 +221,9 @@
       // Update logo berdasarkan mode
       const logo = document.getElementById("logo");
       if (logo) {
-        logo.innerHTML = isDarkMode ? "🔍 Wahasa Search" : "📚 Wahasa Search";
+        logo.innerHTML = isDarkMode 
+          ? '<img src="https://via.placeholder.com/40/4895ef/ffffff?text=🔍" alt="Logo" class="logo-icon"> WHARSA <img src="https://via.placeholder.com/40/4895ef/ffffff?text=📚" alt="Logo" class="logo-icon">'
+          : '<img src="https://via.placeholder.com/40/4361ee/ffffff?text=🔍" alt="Logo" class="logo-icon"> WHARSA <img src="https://via.placeholder.com/40/4361ee/ffffff?text=📚" alt="Logo" class="logo-icon">';
       }
     }
 
@@ -432,6 +434,25 @@
       font-size: 2rem;
       margin-bottom: 5px;
       color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .dark-mode .logo-icon {
+      background-color: var(--accent-color);
     }
 
     .tagline {
@@ -950,6 +971,12 @@
         font-size: 1.8rem;
       }
       
+      .logo-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+      }
+      
       .tagline {
         font-size: 0.8rem;
       }
@@ -1041,10 +1068,13 @@
 <body>
   <div class="container">
     <header>
-      <h1 id="logo">📚 Wahasa Search</h1>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap;">
+        <img src="download.jpg" alt="Logo Kiri" style="height: 90px;">
+        <h1 id="logo" style="margin: 0; font-size: 2rem; color: var(--primary-color);">Wahasa Search</h1>
+        <img src="download2.png" alt="Logo Kanan" style="height: 90px;">
+      </div>
       <p class="tagline">Platform Pencarian Jurnal Ilmiah dan Berita Terkini</p>
-    </header>
-
+    </header>    
     <div class="search-container">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
@@ -1095,10 +1125,6 @@
       <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
         <span>🏫</span>
         <span>Sekolah</span>
-      </a>
-      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
-        <span>📖</span>
-        <span>Perpustakaan</span>
       </a>
     </div>
   </div>
