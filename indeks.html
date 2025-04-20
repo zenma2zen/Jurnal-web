@@ -221,9 +221,7 @@
       // Update logo berdasarkan mode
       const logo = document.getElementById("logo");
       if (logo) {
-        logo.innerHTML = isDarkMode 
-          ? '<img src="https://via.placeholder.com/40/4895ef/ffffff?text=🔍" alt="Logo" class="logo-icon"> WHARSA <img src="https://via.placeholder.com/40/4895ef/ffffff?text=📚" alt="Logo" class="logo-icon">'
-          : '<img src="https://via.placeholder.com/40/4361ee/ffffff?text=🔍" alt="Logo" class="logo-icon"> WHARSA <img src="https://via.placeholder.com/40/4361ee/ffffff?text=📚" alt="Logo" class="logo-icon">';
+        logo.innerHTML = isDarkMode ? "🔍 Wahasa Search" : "📚 Wahasa Search";
       }
     }
 
@@ -434,25 +432,6 @@
       font-size: 2rem;
       margin-bottom: 5px;
       color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--primary-color);
-      color: white;
-    }
-
-    .dark-mode .logo-icon {
-      background-color: var(--accent-color);
     }
 
     .tagline {
@@ -926,17 +905,14 @@
     /* Mobile Navigation */
     .mobile-nav {
       display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--card-bg);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 999;
-  padding: 10px 0;
-  transition: transform 0.3s ease;
-  
-
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 90;
+      padding: 10px 0;
     }
 
     .mobile-nav-items {
@@ -963,8 +939,7 @@
     @media (max-width: 768px) {
       .container {
         padding: 10px;
-        padding-bottom: 90px;
-        /* Space for mobile nav */
+        padding-bottom: 70px; /* Space for mobile nav */
       }
       
       header {
@@ -973,12 +948,6 @@
       
       #logo {
         font-size: 1.8rem;
-      }
-      
-      .logo-icon {
-        width: 30px;
-        height: 30px;
-        font-size: 14px;
       }
       
       .tagline {
@@ -1072,11 +1041,7 @@
 <body>
   <div class="container">
     <header>
-      <h1 id="logo">
-        <span class="logo-icon">🔍</span>
-        WHARSA
-        <span class="logo-icon">📚</span>
-      </h1>
+      <h1 id="logo">WHARSA</h1>
       <p class="tagline">Wahasa Academic Reference Search Assistant</p>
     </header>
 
@@ -1121,21 +1086,23 @@
   </div>
 
   <!-- Mobile Navigation -->
-  <div class="mobile-nav-items">
-    <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
-      <span>🕒</span>
-      <span>Riwayat</span>
-    </a>
-    <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
-      <span>🏫</span>
-      <span>Sekolah</span>
-    </a>
-    <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
-      <span>📖</span>
-      <span>Perpus</span>
-    </a>
+  <div class="mobile-nav">
+    <div class="mobile-nav-items">
+      <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
+        <span>🕒</span>
+        <span>Riwayat</span>
+      </a>
+      <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
+        <span>🏫</span>
+        <span>Sekolah</span>
+      </a>
+      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
+        <span>📖</span>
+        <span>Perpustakaan</span>
+      </a>
+    </div>
   </div>
-  
+
   <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
 </body>
 </html>
