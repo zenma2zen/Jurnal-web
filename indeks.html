@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WHARSA - Wahasa Academic Reference Search Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    const API_KEY = "AIzaSyDM4a0GLSA3lMRYJSTzgoUfG88OZI-1MJI";
+    const CX = "332c680f2381f4787";
+    const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
+
+    let currentPage = 1;
+    let lastQuery = "";
+    let totalResults = 0;
+    let selectedYear = "";
+    let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+
+    async function fetchLatestNews() {
+      try {
+        let response = await fetch(NEWS_URL);
+        let data = await response.json();
+        let newsContainer = document.getElementById("newsContainer");
+        newsContainer.innerHTML = `
+          <div class="section-header">
+            <h3>🌍 Berita Internasional Terkini</h3>
+          </div>
+          <div class="news-grid" id="newsGrid"></div>
+        `;
+
+        let newsGrid = document.getElementById("newsGrid");
+        
+        if (data.data && data.data.length > 0) {
+          data.data.slice(0, 6).forEach(article => {
+            let newsItem = document.createElement("div");
+            newsItem.classList.add("news-card");
+            newsItem.innerHTML = `
+              <div class="news-content">
+                <h4><a href="${article.link}" target="_blank">${article.title}</a></h4>
+                <p class="news-snippet">${article.contentSnippet || "Deskripsi tidak tersedia"}</p>
+                <p class="news-date">${article.isoDate ? new Date(article.isoDate).toLocaleDateString('id-ID') : ''}</p>
+              </div>
+              ${article.image ? `<img src="${article.image.small}" alt="${article.title}" class="news-image">` : ''}
+            `;
+            newsGrid.appendChild(newsItem);
+          });
+        } else {
+          newsContainer.innerHTML += "<p class='no-data'>Tidak ada berita terbaru yang ditemukan.</p>";
+        }
+      } catch (error) {
+        console.error("Error fetching news:", error);
+        document.getElementById("newsContainer").innerHTML += "<p class='error-msg'>Gagal memuat berita. Silakan coba lagi.</p>";
+      }
+    }
+
+    function searchJournals(query, page = 1) {
+      if (!query.trim()) {
+        document.getElementById("searchResults").innerHTML = "<p class='no-data'>Masukkan kata kunci pencarian</p>";
+        return;
+      }
+      
+      lastQuery = query;
+      currentPage = page;
+      const startIndex = (page - 1) * 10 + 1;
+      
+      // Tambahkan filter tahun jika dipilih
+      let searchQuery = query;
+      if (selectedYear) {
+        searchQuery += ` after:${selectedYear}-01-01 before:${selectedYear}-12-31`;
+      }
+      
+      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(searchQuery)}&cx=${CX}&key=${API_KEY}&start=${startIndex}`;
+
+      document.getElementById("searchResults").innerHTML = `
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <p>Mencari jurnal...</p>
+        </div>
+      `;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          totalResults = data.searchInformation?.totalResults || 0;
+          displayResults(data);
+          addToSearchHistory(query);
+        })
+        .catch(error => {
+          console.error("Error fetching search results:", error);
+          document.getElementById("searchResults").innerHTML = `
+            <p class='error-msg'>Gagal memuat hasil pencarian. Silakan coba lagi.</p>
+          `;
+        });
+    }
+
+    function displayResults(data) {
+      let resultsContainer = document.getElementById("searchResults");
+      resultsContainer.innerHTML = "";
+
+      if (data.items && data.items.length > 0) {
+        let yearFilterInfo = selectedYear ? `<span class="year-filter-info">(Filter tahun: ${selectedYear})</span>` : "";
+        
+        resultsContainer.innerHTML = `
+          <div class="results-header">
+            <div>
+              <h3>Hasil Pencarian untuk "${lastQuery}"</h3>
+              ${yearFilterInfo}
+            </div>
+            <p class="results-count">${totalResults} hasil ditemukan</p>
+          </div>
+          <div class="results-grid" id="resultsGrid"></div>
+        `;
+
+        let resultsGrid = document.getElementById("resultsGrid");
+        
+        data.items.forEach(item => {
+          let resultItem = document.createElement("div");
+          resultItem.classList.add("result-card");
+          resultItem.innerHTML = `
+            <div class="result-content">
+              <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
+              <p class="result-url">${new URL(item.link).hostname.replace('www.', '')}</p>
+              <p class="result-snippet">${item.snippet}</p>
+              <div class="result-meta">
+                ${extractYearFromResult(item.snippet) ? `<span class="result-year">${extractYearFromResult(item.snippet)}</span>` : ''}
+              </div>
+            </div>
+          `;
+          resultsGrid.appendChild(resultItem);
+        });
+
+        displayPagination();
+      } else {
+        let noResultsMessage = selectedYear 
+          ? `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" pada tahun ${selectedYear}</p>`
+          : `<p>Tidak ada hasil ditemukan untuk "${lastQuery}"</p>`;
+        
+        resultsContainer.innerHTML = `
+          <div class="no-results">
+            <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" alt="No results" width="100">
+            <h3>Tidak ada hasil ditemukan</h3>
+            ${noResultsMessage}
+            <p>Coba gunakan kata kunci yang berbeda atau hapus filter tahun</p>
+          </div>
+        `;
+      }
+    }
+
+    // Fungsi untuk mengekstrak tahun dari snippet hasil pencarian
+    function extractYearFromResult(snippet) {
+      const yearMatch = snippet.match(/(19|20)\d{2}/);
+      return yearMatch ? yearMatch[0] : null;
+    }
+
+    function performSearch() {
+      let query = document.getElementById("searchInput").value.trim();
+      if (query) {
+        currentPage = 1;
+        searchJournals(query, currentPage);
+      }
+    }
+
+    function displayPagination() {
+      const totalPages = Math.min(Math.ceil(totalResults / 10), 10); // Batasi maksimal 10 halaman
+      if (totalPages <= 1) return;
+
+      const paginationContainer = document.createElement("div");
+      paginationContainer.classList.add("pagination");
+
+      // Tombol Previous
+      if (currentPage > 1) {
+        let prevLink = document.createElement("a");
+        prevLink.href = "#";
+        prevLink.innerHTML = "&laquo;";
+        prevLink.onclick = function() {
+          searchJournals(lastQuery, currentPage - 1);
+          return false;
+        };
+        paginationContainer.appendChild(prevLink);
+      }
+
+      // Tampilkan beberapa nomor halaman sekitar halaman saat ini
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, currentPage + 2);
+
+      for (let i = startPage; i <= endPage; i++) {
+        let pageLink = document.createElement("a");
+        pageLink.textContent = i;
+        pageLink.href = "#";
+        if (i === currentPage) pageLink.classList.add("active");
+
+        pageLink.onclick = function() {
+          searchJournals(lastQuery, i);
+          return false;
+        };
+
+        paginationContainer.appendChild(pageLink);
+      }
+
+      // Tombol Next
+      if (currentPage < totalPages) {
+        let nextLink = document.createElement("a");
+        nextLink.href = "#";
+        nextLink.innerHTML = "&raquo;";
+        nextLink.onclick = function() {
+          searchJournals(lastQuery, currentPage + 1);
+          return false;
+        };
+        paginationContainer.appendChild(nextLink);
+      }
+
+      document.getElementById("searchResults").appendChild(paginationContainer);
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+      const isDarkMode = document.body.classList.contains("dark-mode");
+      localStorage.setItem("darkMode", isDarkMode);
+      document.getElementById("darkModeBtn").innerHTML = isDarkMode ? "☀️ Mode Terang" : "🌙 Mode Gelap";
+      
+      // Update logo berdasarkan mode
+      const logo = document.getElementById("logo");
+      if (logo) {
+        logo.innerHTML = isDarkMode 
+          ? '<img src="https://via.placeholder.com/40/4895ef/ffffff?text=🔍" alt="Logo" class="logo-icon"> WHARSA <img src="https://via.placeholder.com/40/4895ef/ffffff?text=📚" alt="Logo" class="logo-icon">'
+          : '<img src="https://via.placeholder.com/40/4361ee/ffffff?text=🔍" alt="Logo" class="logo-icon"> WHARSA <img src="https://via.placeholder.com/40/4361ee/ffffff?text=📚" alt="Logo" class="logo-icon">';
+      }
+    }
+
+    // Handle Enter key press
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        performSearch();
+      }
+    }
+
+    // Handle perubahan filter tahun
+    function handleYearFilter() {
+      selectedYear = document.getElementById("yearFilter").value;
+      if (lastQuery) {
+        currentPage = 1;
+        searchJournals(lastQuery, currentPage);
+      }
+    }
+
+    // Generate opsi tahun untuk filter (dari 2000 hingga tahun sekarang)
+    function generateYearOptions() {
+      const yearSelect = document.getElementById("yearFilter");
+      const currentYear = new Date().getFullYear();
+      
+      // Tambahkan opsi default
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Semua Tahun";
+      yearSelect.appendChild(defaultOption);
+      
+      // Tambahkan opsi tahun dari 2000 hingga sekarang
+      for (let year = currentYear; year >= 2000; year--) {
+        const option = document.createElement("option");
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    // ===== SEARCH HISTORY FUNCTIONS =====
+    function addToSearchHistory(query) {
+      // Check if query already exists in history
+      const existingIndex = searchHistory.findIndex(item => item.query === query);
+      
+      if (existingIndex !== -1) {
+        // Update timestamp if exists
+        searchHistory[existingIndex].timestamp = new Date().toISOString();
+      } else {
+        // Add new entry if doesn't exist
+        searchHistory.unshift({
+          query: query,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Limit history to 10 items
+        if (searchHistory.length > 10) {
+          searchHistory = searchHistory.slice(0, 10);
+        }
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      
+      // Update history display
+      displaySearchHistory();
+    }
+
+    function displaySearchHistory() {
+      const historyContainer = document.getElementById("historyContainer");
+      if (!historyContainer) return;
+      
+      if (searchHistory.length === 0) {
+        historyContainer.innerHTML = '<p class="no-history">Belum ada riwayat pencarian</p>';
+        return;
+      }
+      
+      let html = '<div class="history-list">';
+      
+      searchHistory.forEach((item, index) => {
+        const date = new Date(item.timestamp);
+        const formattedDate = date.toLocaleString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        html += `
+          <div class="history-item">
+            <div class="history-query" onclick="searchFromHistory('${item.query}')">
+              ${index + 1}. ${item.query}
+            </div>
+            <div class="history-date">${formattedDate}</div>
+            <button class="history-delete" onclick="deleteHistoryItem(${index})">×</button>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      historyContainer.innerHTML = html;
+    }
+
+    function searchFromHistory(query) {
+      document.getElementById("searchInput").value = query;
+      searchJournals(query);
+    }
+
+    function deleteHistoryItem(index) {
+      searchHistory.splice(index, 1);
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      displaySearchHistory();
+    }
+
+    function clearSearchHistory() {
+      searchHistory = [];
+      localStorage.removeItem('searchHistory');
+      displaySearchHistory();
+    }
+
+    function toggleHistory() {
+      const historySection = document.getElementById("historySection");
+      if (historySection.style.display === "none") {
+        historySection.style.display = "block";
+        document.getElementById("searchResults").style.display = "none";
+        document.getElementById("newsContainer").style.display = "none";
+        displaySearchHistory();
+      } else {
+        historySection.style.display = "none";
+        document.getElementById("searchResults").style.display = "block";
+        document.getElementById("newsContainer").style.display = "block";
+      }
+    }
+
+    window.onload = function() {
+      fetchLatestNews();
+      generateYearOptions();
+      
+      // Set dark mode from localStorage
+      if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
+      }
+      
+      // Focus on search input
+      document.getElementById("searchInput").focus();
+    };
+  </script>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --text-color: #333;
+      --text-light: #6c757d;
+      --bg-color: #ffffff;
+      --card-bg: #f8f9fa;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --border-radius: 8px;
+    }
+
+    .dark-mode {
+      --primary-color: #4895ef;
+      --secondary-color: #4361ee;
+      --accent-color: #3f37c9;
+      --light-color: #343a40;
+      --dark-color: #f8f9fa;
+      --text-color: #f1f1f1;
+      --text-light: #adb5bd;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      transition: all 0.3s ease;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: var(--bg-color);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 10px 0;
+    }
+
+    #logo {
+      font-size: 2rem;
+      margin-bottom: 5px;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .dark-mode .logo-icon {
+      background-color: var(--accent-color);
+    }
+
+    .tagline {
+      color: var(--text-light);
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+    }
+
+    .search-container {
+      max-width: 800px;
+      margin: 0 auto 20px;
+      padding: 0 15px;
+    }
+
+    .search-box {
+      display: flex;
+      box-shadow: var(--shadow);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    #searchInput {
+      flex: 1;
+      padding: 12px 15px;
+      border: none;
+      font-size: 16px;
+      background-color: var(--light-color);
+      color: var(--text-color);
+      min-height: 50px;
+    }
+
+    #searchInput:focus {
+      outline: 2px solid var(--accent-color);
+    }
+
+    .search-box button {
+      padding: 0 20px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+      min-width: 80px;
+    }
+
+    .search-box button:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .filter-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 5px;
+    }
+
+    .year-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .year-filter label {
+      color: var(--text-light);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    #yearFilter {
+      padding: 8px 10px;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--text-light);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      cursor: pointer;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .shortcuts {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      padding: 0 10px;
+    }
+
+    .shortcut {
+      padding: 10px 15px;
+      background-color: var(--primary-color);
+      color: white;
+      text-decoration: none;
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .shortcut:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+
+    #darkModeBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      z-index: 100;
+      transition: all 0.3s;
+    }
+
+    #darkModeBtn:hover {
+      background-color: var(--secondary-color);
+    }
+
+    /* Search Results */
+    #searchResults {
+      margin: 20px 0;
+      padding: 0 10px;
+    }
+
+    .results-header {
+      margin-bottom: 15px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .results-header h3 {
+      color: var(--primary-color);
+      margin-right: 10px;
+      font-size: 1.2rem;
+      line-height: 1.3;
+    }
+
+    .year-filter-info {
+      color: var(--text-light);
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    .results-count {
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .result-card {
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+      transition: transform 0.3s;
+    }
+
+    .result-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .result-card h3 {
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    .result-card h3 a {
+      color: var(--primary-color);
+      text-decoration: none;
+      line-height: 1.3;
+    }
+
+    .result-card h3 a:hover {
+      text-decoration: underline;
+    }
+
+    .result-url {
+      color: var(--text-light);
+      font-size: 13px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .result-snippet {
+      color: var(--text-color);
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .result-year {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    /* News Container */
+    #newsContainer {
+      margin-top: 30px;
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      margin-bottom: 15px;
+    }
+
+    .section-header h3 {
+      color: var(--primary-color);
+      font-size: 1.2rem;
+    }
+
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .news-card {
+      background-color: var(--bg-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s;
+    }
+
+    .news-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .news-content {
+      padding: 12px;
+      flex: 1;
+    }
+
+    .news-card h4 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+
+    .news-card h4 a {
+      color: var(--text-color);
+      text-decoration: none;
+    }
+
+    .news-card h4 a:hover {
+      color: var(--primary-color);
+      text-decoration: underline;
+    }
+
+    .news-snippet {
+      color: var(--text-light);
+      font-size: 13px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .news-date {
+      color: var(--text-light);
+      font-size: 11px;
+      font-style: italic;
+    }
+
+    .news-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 25px;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .pagination a {
+      padding: 6px 12px;
+      text-decoration: none;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+      border-radius: var(--border-radius);
+      transition: all 0.3s;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .pagination a:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .pagination a.active {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: bold;
+    }
+
+    /* Loading Spinner */
+    .loading-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* No Data/Error Messages */
+    .no-data, .error-msg {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-light);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 30px;
+    }
+
+    .no-results img {
+      margin-bottom: 15px;
+      width: 80px;
+      height: auto;
+    }
+
+    /* Search History Section */
+    #historySection {
+      display: none;
+      margin-top: 20px;
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .history-header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .history-header h2 {
+      color: var(--primary-color);
+      font-size: 1.3rem;
+    }
+
+    .history-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background-color: var(--bg-color);
+      border-radius: var(--border-radius);
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      background-color: var(--light-color);
+    }
+
+    .dark-mode .history-item:hover {
+      background-color: var(--dark-color);
+      opacity: 0.9;
+    }
+
+    .history-query {
+      flex: 1;
+      cursor: pointer;
+      color: var(--primary-color);
+      font-size: 14px;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .history-query:hover {
+      text-decoration: underline;
+    }
+
+    .history-date {
+      color: var(--text-light);
+      font-size: 12px;
+      margin: 0 10px;
+      white-space: nowrap;
+    }
+
+    .history-delete {
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 5px;
+    }
+
+    .history-delete:hover {
+      color: #e53935;
+    }
+
+    .no-history {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-light);
+    }
+
+    /* Mobile Navigation */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 90;
+      padding: 10px 0;
+    }
+
+    .mobile-nav-items {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-color);
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+
+    .mobile-nav-item i {
+      font-size: 20px;
+      margin-bottom: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+        padding-bottom: 70px; /* Space for mobile nav */
+      }
+      
+      header {
+        margin-bottom: 15px;
+      }
+      
+      #logo {
+        font-size: 1.8rem;
+      }
+      
+      .logo-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+      }
+      
+      .tagline {
+        font-size: 0.8rem;
+      }
+      
+      .search-box {
+        flex-direction: column;
+      }
+      
+      #searchInput {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 12px;
+      }
+      
+      .search-box button {
+        width: 100%;
+        padding: 12px;
+      }
+      
+      .news-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .shortcuts {
+        display: none;
+      }
+      
+      .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .year-filter {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+      }
+      
+      #yearFilter {
+        width: 100%;
+      }
+
+      .history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .history-date {
+        margin-left: 0;
+        margin-right: 0;
+        font-size: 11px;
+      }
+
+      .history-actions {
+        width: 100%;
+      }
+      
+      /* Show mobile nav on small screens */
+      .mobile-nav {
+        display: block;
+      }
+    }
+
+    @media (min-width: 769px) {
+      .container {
+        padding-bottom: 20px;
+      }
+      
+      .results-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .history-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .history-item {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap;">
+        <img src="download.jpg" alt="Logo Kiri" style="height: 90px;">
+        <h1 id="logo" style="margin: 0; font-size: 2rem; color: var(--primary-color);">Wahasa Search</h1>
+        <img src="download2.png" alt="Logo Kanan" style="height: 90px;">
+      </div>
+      <p class="tagline">Platform Pencarian Jurnal Ilmiah dan Berita Terkini</p>
+    </header>    
+    <div class="search-container">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
+        <button onclick="performSearch()">Cari</button>
+      </div>
+      
+      <div class="filter-container">
+        <div class="year-filter">
+          <label for="yearFilter">Filter Tahun:</label>
+          <select id="yearFilter" onchange="handleYearFilter()">
+            <!-- Opsi tahun akan di-generate oleh JavaScript -->
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="shortcuts">
+      <button class="shortcut" onclick="toggleHistory()">🕒 Riwayat Pencarian</button>
+      <a href="https://sma-waha1.sch.id/" target="_blank" class="shortcut">🏫 Website Sekolah</a>
+      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="shortcut">📖 Perpustakaan Digital</a>
+    </div>
+
+    <div id="searchResults"></div>
+    <div id="newsContainer"></div>
+
+    <!-- Search History Section -->
+    <div id="historySection">
+      <div class="history-header">
+        <h2>Riwayat Pencarian</h2>
+        <div class="history-actions">
+          <button class="shortcut" onclick="clearSearchHistory()">🧹 Hapus Semua</button>
+          <button class="shortcut" onclick="toggleHistory()">🔍 Kembali ke Pencarian</button>
+        </div>
+      </div>
+      <div id="historyContainer">
+        <!-- History items will be inserted here by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <div class="mobile-nav">
+    <div class="mobile-nav-items">
+      <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
+        <span>🕒</span>
+        <span>Riwayat</span>
+      </a>
+      <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
+        <span>🏫</span>
+        <span>Sekolah</span>
+      </a>
+    </div>
+  </div>
+
+  <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
+</body>
+</html>
