@@ -1068,13 +1068,14 @@
 <body>
   <div class="container">
     <header>
-      <div style="display: flex; align-items: center; justify-content: center; gap: 80px; flex-wrap: wrap;">
-        <img src="download.jpg" alt="Logo Kiri" style="height: 110px;">
-        <h1 id="logo" style="margin: 0; font-size: 4rem; color: var(--primary-color);">WHARSA</h1>
-        <img src="download2.png" alt="Logo Kanan" style="height: 120px;">
-      </div>
+      <h1 id="logo">
+        <span class="logo-icon">🔍</span>
+        WHARSA
+        <span class="logo-icon">📚</span>
+      </h1>
       <p class="tagline">Wahasa Academic Reference Search Assistant</p>
-    </header>    
+    </header>
+
     <div class="search-container">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
@@ -1085,6 +1086,7 @@
         <div class="year-filter">
           <label for="yearFilter">Filter Tahun:</label>
           <select id="yearFilter" onchange="handleYearFilter()">
+            <!-- Opsi tahun akan di-generate oleh JavaScript -->
           </select>
         </div>
       </div>
@@ -1115,19 +1117,21 @@
   </div>
 
   <!-- Mobile Navigation -->
-  <div class="mobile-nav">
-    <div class="mobile-nav-items">
-      <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
-        <span>🕒</span>
-        <span>Riwayat</span>
-      </a>
-      <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
-        <span>🏫</span>
-        <span>Sekolah</span>
-      </a>
-    </div>
+  <div class="mobile-nav-items">
+    <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
+      <span>🕒</span>
+      <span>Riwayat</span>
+    </a>
+    <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
+      <span>🏫</span>
+      <span>Sekolah</span>
+    </a>
+    <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
+      <span>📖</span>
+      <span>Perpus</span>
+    </a>
   </div>
-
+  
   <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
 </body>
 </html>
