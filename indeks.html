@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WHARSA - Wahasa Academic Reference Search Assistant</title>
+  <title>Wahasa Academic Reference Search Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
     const API_KEY = "AIzaSyDM4a0GLSA3lMRYJSTzgoUfG88OZI-1MJI";
@@ -1102,6 +1102,69 @@
       </a>
     </div>
   </div>
+  <!-- Google Sign-In Library -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Google Login Button -->
+<div id="g_id_onload"
+     data-client_id="620616468515-dbd0rraqjv8h1c776p6le5ecoakqtcs5.apps.googleusercontent.com"
+     data-context="signin"
+     data-ux_mode="popup"
+     data-callback="handleCredentialResponse"
+     data-auto_prompt="false">
+</div>
+
+<div class="g_id_signin"
+     data-type="standard"
+     data-size="large"
+     data-theme="outline"
+     data-text="signin_with"
+     data-shape="rectangular"
+     data-logo_alignment="left">
+</div>
+
+<!-- JWT Decode -->
+<script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+
+<!-- Script untuk menangani login -->
+<script>
+function handleCredentialResponse(response) {
+    const data = jwt_decode(response.credential);
+    console.log("Login Success:", data);
+
+    // Simpan nama user ke localStorage
+    localStorage.setItem("username", data.name);
+    localStorage.setItem("useremail", data.email);
+    localStorage.setItem("userpicture", data.picture);
+
+    alert(`Selamat datang, ${data.name}! 🎉`);
+    location.reload(); // Refresh halaman biar user langsung masuk
+}
+
+// Tampilkan nama user kalau sudah login
+window.onload = function() {
+    const username = localStorage.getItem("username");
+    if (username) {
+        const userSection = document.createElement("div");
+        userSection.innerHTML = `
+            <p style="margin-top:10px;">👤 <strong>${username}</strong></p>
+            <button onclick="logoutGoogle()" style="padding:5px 10px;margin-top:5px;background-color:#ef233c;color:white;border:none;border-radius:5px;cursor:pointer;">Logout</button>
+        `;
+        const header = document.querySelector("header");
+        header.appendChild(userSection);
+    }
+}
+
+// Fungsi Logout
+function logoutGoogle() {
+    localStorage.removeItem("username");
+    localStorage.removeItem("useremail");
+    localStorage.removeItem("userpicture");
+    alert("Berhasil logout!");
+    location.reload();
+}
+</script>
+
 
   <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
 </body>
