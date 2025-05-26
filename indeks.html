@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wahasa Academic Reference Search Assistant</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>WHARSA - Academic Reference Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
-    const API_KEY = "AIzaSyCCqbizm6dY-FbtuoHk7RoXP_8pyDZno2Q-1MJI";
+    const API_KEY = "AIzaSyCCqbizm6dY-FbtuoHk7RoXP_8pyDZno2Q";
     const CX = "332c680f2381f4787";
     const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
 
     let currentPage = 1;
     let lastQuery = "";
     let totalResults = 0;
-    let selectedYear = "";
+    let selectedYearStart = "";
+    let selectedYearEnd = "";
     let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
 
     async function fetchLatestNews() {
@@ -35,12 +36,12 @@
             let newsItem = document.createElement("div");
             newsItem.classList.add("news-card");
             newsItem.innerHTML = `
+              ${article.image ? `<img src="${article.image.small}" alt="${article.title}" class="news-image">` : ''}
               <div class="news-content">
                 <h4><a href="${article.link}" target="_blank">${article.title}</a></h4>
                 <p class="news-snippet">${article.contentSnippet || "Deskripsi tidak tersedia"}</p>
                 <p class="news-date">${article.isoDate ? new Date(article.isoDate).toLocaleDateString('id-ID') : ''}</p>
               </div>
-              ${article.image ? `<img src="${article.image.small}" alt="${article.title}" class="news-image">` : ''}
             `;
             newsGrid.appendChild(newsItem);
           });
@@ -63,10 +64,14 @@
       currentPage = page;
       const startIndex = (page - 1) * 10 + 1;
       
-      // Tambahkan filter tahun jika dipilih
+      // Tambahkan filter rentang tahun jika dipilih
       let searchQuery = query;
-      if (selectedYear) {
-        searchQuery += ` after:${selectedYear}-01-01 before:${selectedYear}-12-31`;
+      if (selectedYearStart && selectedYearEnd) {
+        searchQuery += ` after:${selectedYearStart}-01-01 before:${selectedYearEnd}-12-31`;
+      } else if (selectedYearStart) {
+        searchQuery += ` after:${selectedYearStart}-01-01`;
+      } else if (selectedYearEnd) {
+        searchQuery += ` before:${selectedYearEnd}-12-31`;
       }
       
       const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(searchQuery)}&cx=${CX}&key=${API_KEY}&start=${startIndex}`;
@@ -98,7 +103,14 @@
       resultsContainer.innerHTML = "";
 
       if (data.items && data.items.length > 0) {
-        let yearFilterInfo = selectedYear ? `<span class="year-filter-info">(Filter tahun: ${selectedYear})</span>` : "";
+        let yearFilterInfo = "";
+        if (selectedYearStart && selectedYearEnd) {
+          yearFilterInfo = `<span class="year-filter-info">(Filter tahun: ${selectedYearStart} - ${selectedYearEnd})</span>`;
+        } else if (selectedYearStart) {
+          yearFilterInfo = `<span class="year-filter-info">(Filter tahun: ≥ ${selectedYearStart})</span>`;
+        } else if (selectedYearEnd) {
+          yearFilterInfo = `<span class="year-filter-info">(Filter tahun: ≤ ${selectedYearEnd})</span>`;
+        }
         
         resultsContainer.innerHTML = `
           <div class="results-header">
@@ -131,22 +143,28 @@
 
         displayPagination();
       } else {
-        let noResultsMessage = selectedYear 
-          ? `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" pada tahun ${selectedYear}</p>`
-          : `<p>Tidak ada hasil ditemukan untuk "${lastQuery}"</p>`;
+        let noResultsMessage = "";
+        if (selectedYearStart && selectedYearEnd) {
+          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" pada rentang tahun ${selectedYearStart}-${selectedYearEnd}</p>`;
+        } else if (selectedYearStart) {
+          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" setelah tahun ${selectedYearStart}</p>`;
+        } else if (selectedYearEnd) {
+          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" sebelum tahun ${selectedYearEnd}</p>`;
+        } else {
+          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}"</p>`;
+        }
         
         resultsContainer.innerHTML = `
           <div class="no-results">
             <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" alt="No results" width="100">
             <h3>Tidak ada hasil ditemukan</h3>
             ${noResultsMessage}
-            <p>Coba gunakan kata kunci yang berbeda atau hapus filter tahun</p>
+            <p>Coba gunakan kata kunci yang berbeda atau sesuaikan filter tahun</p>
           </div>
         `;
       }
     }
 
-    // Fungsi untuk mengekstrak tahun dari snippet hasil pencarian
     function extractYearFromResult(snippet) {
       const yearMatch = snippet.match(/(19|20)\d{2}/);
       return yearMatch ? yearMatch[0] : null;
@@ -161,13 +179,12 @@
     }
 
     function displayPagination() {
-      const totalPages = Math.min(Math.ceil(totalResults / 10), 10); // Batasi maksimal 10 halaman
+      const totalPages = Math.min(Math.ceil(totalResults / 10), 10);
       if (totalPages <= 1) return;
 
       const paginationContainer = document.createElement("div");
       paginationContainer.classList.add("pagination");
 
-      // Tombol Previous
       if (currentPage > 1) {
         let prevLink = document.createElement("a");
         prevLink.href = "#";
@@ -179,7 +196,6 @@
         paginationContainer.appendChild(prevLink);
       }
 
-      // Tampilkan beberapa nomor halaman sekitar halaman saat ini
       const startPage = Math.max(1, currentPage - 2);
       const endPage = Math.min(totalPages, currentPage + 2);
 
@@ -197,7 +213,6 @@
         paginationContainer.appendChild(pageLink);
       }
 
-      // Tombol Next
       if (currentPage < totalPages) {
         let nextLink = document.createElement("a");
         nextLink.href = "#";
@@ -217,75 +232,66 @@
       const isDarkMode = document.body.classList.contains("dark-mode");
       localStorage.setItem("darkMode", isDarkMode);
       document.getElementById("darkModeBtn").innerHTML = isDarkMode ? "☀️ Mode Terang" : "🌙 Mode Gelap";
-      
-      // Update logo berdasarkan mode
-      const logo = document.getElementById("logo");
-      if (logo) {
-        logo.innerHTML = isDarkMode ? "WHARSA" : "WHARSA";
-      }
     }
 
-    // Handle Enter key press
     function handleKeyPress(event) {
       if (event.key === "Enter") {
         performSearch();
       }
     }
 
-    // Handle perubahan filter tahun
     function handleYearFilter() {
-      selectedYear = document.getElementById("yearFilter").value;
+      selectedYearStart = document.getElementById("yearStart").value;
+      selectedYearEnd = document.getElementById("yearEnd").value;
       if (lastQuery) {
         currentPage = 1;
         searchJournals(lastQuery, currentPage);
       }
     }
 
-    // Generate opsi tahun untuk filter (dari 2000 hingga tahun sekarang)
     function generateYearOptions() {
-      const yearSelect = document.getElementById("yearFilter");
+      const yearStartSelect = document.getElementById("yearStart");
+      const yearEndSelect = document.getElementById("yearEnd");
       const currentYear = new Date().getFullYear();
       
       // Tambahkan opsi default
       const defaultOption = document.createElement("option");
       defaultOption.value = "";
-      defaultOption.textContent = "Semua Tahun";
-      yearSelect.appendChild(defaultOption);
+      defaultOption.textContent = "Tahun Awal";
+      yearStartSelect.appendChild(defaultOption);
+      
+      const defaultOptionEnd = document.createElement("option");
+      defaultOptionEnd.value = "";
+      defaultOptionEnd.textContent = "Tahun Akhir";
+      yearEndSelect.appendChild(defaultOptionEnd);
       
       // Tambahkan opsi tahun dari 2000 hingga sekarang
       for (let year = currentYear; year >= 2000; year--) {
         const option = document.createElement("option");
         option.value = year;
         option.textContent = year;
-        yearSelect.appendChild(option);
+        yearStartSelect.appendChild(option.cloneNode(true));
+        yearEndSelect.appendChild(option.cloneNode(true));
       }
     }
 
-    // ===== SEARCH HISTORY FUNCTIONS =====
     function addToSearchHistory(query) {
-      // Check if query already exists in history
       const existingIndex = searchHistory.findIndex(item => item.query === query);
       
       if (existingIndex !== -1) {
-        // Update timestamp if exists
         searchHistory[existingIndex].timestamp = new Date().toISOString();
       } else {
-        // Add new entry if doesn't exist
         searchHistory.unshift({
           query: query,
           timestamp: new Date().toISOString()
         });
         
-        // Limit history to 10 items
         if (searchHistory.length > 10) {
           searchHistory = searchHistory.slice(0, 10);
         }
       }
       
-      // Save to localStorage
       localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-      
-      // Update history display
       displaySearchHistory();
     }
 
@@ -360,19 +366,18 @@
       fetchLatestNews();
       generateYearOptions();
       
-      // Set dark mode from localStorage
       if (localStorage.getItem("darkMode") === "true") {
         document.body.classList.add("dark-mode");
         document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
       }
       
-      // Focus on search input
       document.getElementById("searchInput").focus();
     };
   </script>
   <style>
     :root {
       --primary-color: #4361ee;
+      --primary-light: #e0e5ff;
       --secondary-color: #3f37c9;
       --accent-color: #4895ef;
       --light-color: #f8f9fa;
@@ -380,22 +385,26 @@
       --text-color: #333;
       --text-light: #6c757d;
       --bg-color: #ffffff;
-      --card-bg: #f8f9fa;
-      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      --border-radius: 8px;
+      --card-bg: #ffffff;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      --border-radius: 12px;
+      --border: 1px solid rgba(0, 0, 0, 0.08);
+      --transition: all 0.2s ease;
     }
 
     .dark-mode {
       --primary-color: #4895ef;
+      --primary-light: #1e2b6b;
       --secondary-color: #4361ee;
       --accent-color: #3f37c9;
-      --light-color: #343a40;
+      --light-color: #1e1e1e;
       --dark-color: #f8f9fa;
       --text-color: #f1f1f1;
       --text-light: #adb5bd;
       --bg-color: #121212;
       --card-bg: #1e1e1e;
-      --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      --border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     * {
@@ -405,11 +414,11 @@
     }
 
     body {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Inter', sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       line-height: 1.6;
-      transition: all 0.3s ease;
+      transition: var(--transition);
       padding: 0;
       min-height: 100vh;
     }
@@ -424,25 +433,28 @@
 
     header {
       text-align: center;
-      margin-bottom: 20px;
-      padding: 10px 0;
+      margin-bottom: 30px;
+      padding: 20px 0;
     }
 
     #logo {
-      font-size: 4rem;
-      margin-bottom: 5px;
+      font-size: 3.5rem;
+      margin-bottom: 10px;
       color: var(--primary-color);
+      font-weight: 700;
+      letter-spacing: -2px;
     }
 
     .tagline {
       color: var(--text-light);
       margin-bottom: 15px;
-      font-size: 0.9rem;
+      font-size: 1rem;
+      font-weight: 400;
     }
 
     .search-container {
       max-width: 800px;
-      margin: 0 auto 20px;
+      margin: 0 auto 30px;
       padding: 0 15px;
     }
 
@@ -451,32 +463,45 @@
       box-shadow: var(--shadow);
       border-radius: var(--border-radius);
       overflow: hidden;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      border: var(--border);
+      transition: var(--transition);
+    }
+
+    .search-box:focus-within {
+      box-shadow: 0 0 0 2px var(--primary-light);
     }
 
     #searchInput {
       flex: 1;
-      padding: 12px 15px;
+      padding: 15px 20px;
       border: none;
       font-size: 16px;
-      background-color: var(--light-color);
+      background-color: var(--card-bg);
       color: var(--text-color);
-      min-height: 50px;
+      min-height: 60px;
+      font-family: 'Inter', sans-serif;
     }
 
     #searchInput:focus {
-      outline: 2px solid var(--accent-color);
+      outline: none;
+    }
+
+    #searchInput::placeholder {
+      color: var(--text-light);
+      opacity: 0.7;
     }
 
     .search-box button {
-      padding: 0 20px;
+      padding: 0 25px;
       background-color: var(--primary-color);
       color: white;
       border: none;
       cursor: pointer;
       font-size: 16px;
-      transition: background 0.3s;
-      min-width: 80px;
+      font-weight: 500;
+      transition: var(--transition);
+      min-width: 100px;
     }
 
     .search-box button:hover {
@@ -488,104 +513,136 @@
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 15px;
       padding: 0 5px;
     }
 
-    .year-filter {
+    .year-range-filter {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       flex: 1;
     }
 
-    .year-filter label {
+    .year-range-filter label {
       color: var(--text-light);
       font-size: 14px;
       white-space: nowrap;
     }
 
-    #yearFilter {
-      padding: 8px 10px;
+    .year-range-selects {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+    }
+
+    #yearStart, #yearEnd {
+      padding: 10px 15px;
       border-radius: var(--border-radius);
-      border: 1px solid var(--text-light);
-      background-color: var(--bg-color);
+      border: var(--border);
+      background-color: var(--card-bg);
       color: var(--text-color);
       cursor: pointer;
       flex: 1;
       min-width: 100px;
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition);
+    }
+
+    #yearStart:hover, #yearEnd:hover {
+      border-color: var(--primary-color);
     }
 
     .shortcuts {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 15px;
+      margin-bottom: 30px;
       flex-wrap: wrap;
       padding: 0 10px;
     }
 
     .shortcut {
-      padding: 10px 15px;
-      background-color: var(--primary-color);
-      color: white;
+      padding: 12px 20px;
+      background-color: var(--card-bg);
+      color: var(--text-color);
       text-decoration: none;
       border-radius: var(--border-radius);
       font-size: 14px;
-      transition: all 0.3s;
+      font-weight: 500;
+      transition: var(--transition);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       cursor: pointer;
       flex: 1;
-      min-width: 120px;
+      min-width: 160px;
       justify-content: center;
+      border: var(--border);
+      box-shadow: var(--shadow);
     }
 
     .shortcut:hover {
-      background-color: var(--secondary-color);
+      background-color: var(--primary-light);
+      color: var(--primary-color);
       transform: translateY(-2px);
+    }
+
+    .shortcut-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .shortcut-primary:hover {
+      background-color: var(--secondary-color);
+      color: white;
     }
 
     #darkModeBtn {
       position: fixed;
-  bottom: 80px; /* Naik dari 20px ke 80px biar nggak nutupin mobile-nav */
-  right: 20px;
-  padding: 10px 15px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  font-size: 14px;
-  box-shadow: var(--shadow);
-  z-index: 100;
-  transition: all 0.3s;
+      bottom: 80px;
+      right: 20px;
+      padding: 12px 20px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      z-index: 100;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     #darkModeBtn:hover {
       background-color: var(--secondary-color);
+      transform: translateY(-2px);
     }
 
     /* Search Results */
     #searchResults {
-      margin: 20px 0;
+      margin: 30px 0;
       padding: 0 10px;
     }
 
     .results-header {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
       text-align: left;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 10px;
     }
 
     .results-header h3 {
       color: var(--primary-color);
       margin-right: 10px;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       line-height: 1.3;
+      font-weight: 600;
     }
 
     .year-filter-info {
@@ -597,35 +654,39 @@
     .results-count {
       color: var(--text-light);
       font-size: 14px;
+      font-weight: 500;
     }
 
     .results-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 15px;
+      gap: 20px;
     }
 
     .result-card {
       background-color: var(--card-bg);
       border-radius: var(--border-radius);
-      padding: 15px;
+      padding: 20px;
       box-shadow: var(--shadow);
-      transition: transform 0.3s;
+      transition: var(--transition);
+      border: var(--border);
     }
 
     .result-card:hover {
       transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
 
     .result-card h3 {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-size: 1.1rem;
+      font-weight: 600;
     }
 
     .result-card h3 a {
       color: var(--primary-color);
       text-decoration: none;
-      line-height: 1.3;
+      line-height: 1.4;
     }
 
     .result-card h3 a:hover {
@@ -635,53 +696,56 @@
     .result-url {
       color: var(--text-light);
       font-size: 13px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       word-break: break-all;
     }
 
     .result-snippet {
       color: var(--text-color);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-size: 14px;
-      line-height: 1.4;
+      line-height: 1.5;
     }
 
     .result-meta {
       display: flex;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 10px;
     }
 
     .result-year {
       background-color: var(--primary-color);
       color: white;
-      padding: 3px 8px;
-      border-radius: 12px;
+      padding: 4px 10px;
+      border-radius: 50px;
       font-size: 12px;
+      font-weight: 500;
     }
 
     /* News Container */
     #newsContainer {
-      margin-top: 30px;
+      margin-top: 40px;
       background-color: var(--card-bg);
       border-radius: var(--border-radius);
-      padding: 15px;
+      padding: 20px;
       box-shadow: var(--shadow);
+      border: var(--border);
     }
 
     .section-header {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
 
     .section-header h3 {
       color: var(--primary-color);
-      font-size: 1.2rem;
+      font-size: 1.3rem;
+      font-weight: 600;
     }
 
     .news-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
     }
 
     .news-card {
@@ -691,22 +755,25 @@
       box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
-      transition: transform 0.3s;
+      transition: var(--transition);
+      border: var(--border);
     }
 
     .news-card:hover {
       transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
 
     .news-content {
-      padding: 12px;
+      padding: 20px;
       flex: 1;
     }
 
     .news-card h4 {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-size: 1rem;
-      line-height: 1.3;
+      line-height: 1.4;
+      font-weight: 600;
     }
 
     .news-card h4 a {
@@ -721,52 +788,54 @@
 
     .news-snippet {
       color: var(--text-light);
-      font-size: 13px;
-      margin-bottom: 8px;
-      line-height: 1.4;
+      font-size: 14px;
+      margin-bottom: 10px;
+      line-height: 1.5;
     }
 
     .news-date {
       color: var(--text-light);
-      font-size: 11px;
+      font-size: 12px;
       font-style: italic;
     }
 
     .news-image {
       width: 100%;
-      height: 150px;
+      height: 160px;
       object-fit: cover;
+      border-bottom: var(--border);
     }
 
     /* Pagination */
     .pagination {
       display: flex;
       justify-content: center;
-      margin-top: 25px;
-      gap: 5px;
+      margin-top: 30px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
     .pagination a {
-      padding: 6px 12px;
+      padding: 8px 14px;
       text-decoration: none;
       color: var(--primary-color);
-      border: 1px solid var(--primary-color);
+      border: var(--border);
       border-radius: var(--border-radius);
-      transition: all 0.3s;
-      min-width: 36px;
+      transition: var(--transition);
+      min-width: 40px;
       text-align: center;
+      font-weight: 500;
     }
 
     .pagination a:hover {
-      background-color: var(--primary-color);
-      color: white;
+      background-color: var(--primary-light);
     }
 
     .pagination a.active {
       background-color: var(--primary-color);
       color: white;
-      font-weight: bold;
+      font-weight: 600;
+      border-color: var(--primary-color);
     }
 
     /* Loading Spinner */
@@ -775,7 +844,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 30px;
+      padding: 40px;
     }
 
     .spinner {
@@ -785,7 +854,7 @@
       border-left-color: var(--primary-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
 
     @keyframes spin {
@@ -795,81 +864,86 @@
     /* No Data/Error Messages */
     .no-data, .error-msg {
       text-align: center;
-      padding: 30px;
+      padding: 40px;
       color: var(--text-light);
     }
 
     .no-results {
       text-align: center;
-      padding: 30px;
+      padding: 40px;
     }
 
     .no-results img {
-      margin-bottom: 15px;
-      width: 80px;
+      margin-bottom: 20px;
+      width: 100px;
       height: auto;
+      opacity: 0.7;
     }
 
     /* Search History Section */
     #historySection {
       display: none;
-      margin-top: 20px;
+      margin-top: 30px;
       background-color: var(--card-bg);
       border-radius: var(--border-radius);
-      padding: 15px;
+      padding: 20px;
       box-shadow: var(--shadow);
+      border: var(--border);
     }
 
     .history-header {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 15px;
+      gap: 15px;
+      margin-bottom: 20px;
     }
 
     .history-header h2 {
       color: var(--primary-color);
-      font-size: 1.3rem;
+      font-size: 1.4rem;
+      font-weight: 600;
     }
 
     .history-actions {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       justify-content: flex-end;
     }
 
     .history-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .history-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 12px;
+      padding: 15px;
       background-color: var(--bg-color);
       border-radius: var(--border-radius);
-      transition: all 0.2s;
+      transition: var(--transition);
+      border: var(--border);
     }
 
     .history-item:hover {
       background-color: var(--light-color);
+      transform: translateY(-2px);
     }
 
     .dark-mode .history-item:hover {
-      background-color: var(--dark-color);
-      opacity: 0.9;
+      background-color: var(--light-color);
     }
 
     .history-query {
       flex: 1;
       cursor: pointer;
       color: var(--primary-color);
-      font-size: 14px;
-      line-height: 1.3;
+      font-size: 15px;
+      line-height: 1.4;
       word-break: break-word;
+      font-weight: 500;
     }
 
     .history-query:hover {
@@ -878,8 +952,8 @@
 
     .history-date {
       color: var(--text-light);
-      font-size: 12px;
-      margin: 0 10px;
+      font-size: 13px;
+      margin: 0 15px;
       white-space: nowrap;
     }
 
@@ -887,18 +961,20 @@
       background: none;
       border: none;
       color: var(--text-light);
-      font-size: 16px;
+      font-size: 18px;
       cursor: pointer;
-      padding: 0 5px;
+      padding: 0 8px;
+      transition: var(--transition);
     }
 
     .history-delete:hover {
-      color: #e53935;
+      color: #ff6b6b;
+      transform: scale(1.2);
     }
 
     .no-history {
       text-align: center;
-      padding: 20px;
+      padding: 30px;
       color: var(--text-light);
     }
 
@@ -912,7 +988,8 @@
       background-color: var(--card-bg);
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
       z-index: 90;
-      padding: 10px 0;
+      padding: 12px 0;
+      border-top: var(--border);
     }
 
     .mobile-nav-items {
@@ -928,30 +1005,39 @@
       color: var(--text-color);
       font-size: 12px;
       padding: 5px 10px;
+      border-radius: 8px;
+      transition: var(--transition);
     }
 
-    .mobile-nav-item i {
-      font-size: 20px;
-      margin-bottom: 3px;
+    .mobile-nav-item:hover {
+      color: var(--primary-color);
+      background-color: var(--primary-light);
+    }
+
+    .mobile-nav-item span:first-child {
+      font-size: 22px;
+      margin-bottom: 5px;
     }
 
     /* Responsive */
     @media (max-width: 768px) {
       .container {
-        padding: 10px;
-        padding-bottom: 70px; /* Space for mobile nav */
+        padding: 15px;
+        padding-bottom: 80px;
       }
       
       header {
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        padding: 15px 0;
       }
       
       #logo {
-        font-size: 1.8rem;
+        font-size: 2.5rem;
+        letter-spacing: -1px;
       }
       
       .tagline {
-        font-size: 0.8rem;
+        font-size: 0.9rem;
       }
       
       .search-box {
@@ -960,13 +1046,13 @@
       
       #searchInput {
         width: 100%;
-        margin-bottom: 10px;
-        padding: 12px;
+        margin-bottom: 0;
+        padding: 15px;
       }
       
       .search-box button {
         width: 100%;
-        padding: 12px;
+        padding: 15px;
       }
       
       .news-grid {
@@ -982,41 +1068,51 @@
         align-items: stretch;
       }
 
-      .year-filter {
+      .year-range-filter {
         flex-direction: column;
         align-items: stretch;
-        gap: 5px;
+        gap: 8px;
+      }
+
+      .year-range-selects {
+        flex-direction: column;
       }
       
-      #yearFilter {
+      #yearStart, #yearEnd {
         width: 100%;
       }
 
       .history-item {
         flex-direction: column;
         align-items: flex-start;
-        gap: 5px;
+        gap: 10px;
       }
 
       .history-date {
         margin-left: 0;
         margin-right: 0;
-        font-size: 11px;
+        font-size: 12px;
       }
 
       .history-actions {
         width: 100%;
+        justify-content: space-between;
       }
       
-      /* Show mobile nav on small screens */
       .mobile-nav {
         display: block;
+      }
+
+      #darkModeBtn {
+        padding: 10px 16px;
+        font-size: 13px;
+        bottom: 90px;
       }
     }
 
     @media (min-width: 769px) {
       .container {
-        padding-bottom: 20px;
+        padding-bottom: 30px;
       }
       
       .results-header {
@@ -1041,7 +1137,7 @@
 <body>
   <div class="container">
     <header>
-      <h5 id="logo">WHARSA</h5>
+      <div id="logo">WHARSA</div>
       <p class="tagline">Wahasa Academic Reference Search Assistant</p>
     </header>
 
@@ -1052,17 +1148,22 @@
       </div>
       
       <div class="filter-container">
-        <div class="year-filter">
-          <label for="yearFilter">Filter Tahun:</label>
-          <select id="yearFilter" onchange="handleYearFilter()">
-            <!-- Opsi tahun akan di-generate oleh JavaScript -->
-          </select>
+        <div class="year-range-filter">
+          <label for="yearStart">Rentang Tahun:</label>
+          <div class="year-range-selects">
+            <select id="yearStart" onchange="handleYearFilter()">
+              <!-- Opsi tahun akan di-generate oleh JavaScript -->
+            </select>
+            <select id="yearEnd" onchange="handleYearFilter()">
+              <!-- Opsi tahun akan di-generate oleh JavaScript -->
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="shortcuts">
-      <button class="shortcut" onclick="toggleHistory()">🕒 Riwayat Pencarian</button>
+      <button class="shortcut shortcut-primary" onclick="toggleHistory()">🕒 Riwayat Pencarian</button>
       <a href="https://sma-waha1.sch.id/" target="_blank" class="shortcut">🏫 Website Sekolah</a>
       <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="shortcut">📖 Perpustakaan Digital</a>
     </div>
@@ -1076,7 +1177,7 @@
         <h2>Riwayat Pencarian</h2>
         <div class="history-actions">
           <button class="shortcut" onclick="clearSearchHistory()">🧹 Hapus Semua</button>
-          <button class="shortcut" onclick="toggleHistory()">🔍 Kembali ke Pencarian</button>
+          <button class="shortcut shortcut-primary" onclick="toggleHistory()">🔍 Kembali ke Pencarian</button>
         </div>
       </div>
       <div id="historyContainer">
@@ -1098,11 +1199,3 @@
       </a>
       <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
         <span>📖</span>
-        <span>Perpustakaan</span>
-      </a>
-    </div>
-  </div>
-
-  <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
-</body>
-</html>
