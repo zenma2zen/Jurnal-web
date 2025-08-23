@@ -47,22 +47,38 @@
     }
 
     // Handle Google Sign-In
-    function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      currentUser = {
-        name: data.name,
-        email: data.email,
-        picture: data.picture
-      };
-      
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      document.getElementById("profilePic").src = currentUser.picture;
-      document.getElementById("profilePic").style.display = "block";
-      document.getElementById("googleSignIn").style.display = "none";
-      
-      loadBookmarks();
-      updateUIAfterAuth();
-    }
+   function handleCredentialResponse(response) {
+  const data = parseJwt(response.credential);
+  currentUser = {
+    name: data.name,
+    email: data.email,
+    picture: data.picture
+  };
+
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+  // Update UI
+  document.getElementById("profilePic").src = currentUser.picture;
+  document.getElementById("profilePic").style.display = "block";
+  document.getElementById("googleSignIn").style.display = "none";
+  document.getElementById("signOutBtn").style.display = "inline-block";
+
+  loadBookmarks();
+  updateUIAfterAuth();
+}
+
+function signOut() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+
+  // Update UI
+  document.getElementById("profilePic").style.display = "none";
+  document.getElementById("googleSignIn").style.display = "block";
+  document.getElementById("signOutBtn").style.display = "none";
+
+  userBookmarks = {};
+  updateUIAfterAuth();
+}
 
     function parseJwt(token) {
       let base64Url = token.split('.')[1];
@@ -1336,29 +1352,36 @@
 <body>
   <div class="container">
     <header>
-      <div class="user-menu">
-        <div id="googleSignIn">
-          <div id="g_id_onload"
-               data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-               data-callback="handleCredentialResponse"
-               data-auto_select="true"
-               data-itp_support="true">
-          </div>
-          <div class="g_id_signin" data-type="icon" data-size="large"></div>
-        </div>
-        <div id="userProfile" style="display:none;">
-          <div class="user-profile">
-            <img id="profilePic" src="" alt="Profile" class="user-avatar">
-            <span class="user-name" id="userName"></span>
-            <button onclick="signOut()" class="sign-out-btn">Keluar</button>
-          </div>
-        </div>
-      </div>
+  <div id="logo">WHARSA</div>
+  <p class="tagline">Academic Reference Search</p>
 
-      <div id="logo">WHARSA</div>
-      <p class="tagline">Wahasa Academic Reference Search Assistant</p>
-    </header>
+  <div class="user-menu">
+    <!-- Foto Profil -->
+    <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
 
+    <!-- Tombol Sign In Google -->
+    <div id="googleSignIn" class="g_id_signin"
+         data-type="standard"
+         data-shape="pill"
+         data-theme="outline"
+         data-text="signin_with"
+         data-size="medium"
+         data-logo_alignment="left">
+    </div>
+
+    <!-- Tombol Sign Out -->
+    <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
+      Keluar
+    </button>
+  </div>
+</header>
+
+<!-- Google Identity Service -->
+<div id="g_id_onload"
+     data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
+     data-callback="handleCredentialResponse"
+     data-auto_prompt="false">
+</div>
     <div class="search-container">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
