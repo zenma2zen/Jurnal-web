@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WHARSA - Bookmark Saya</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; padding:20px; background:#f9f9f9; }
+    h1 { color:#4361ee; }
+    .bookmark-card {
+      background:#fff; padding:15px; margin:10px 0; border-radius:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    }
+    .bookmark-card h3 { margin:0 0 8px; font-size:1.1rem; }
+    .bookmark-card a { color:#4361ee; text-decoration:none; }
+    .bookmark-card a:hover { text-decoration:underline; }
+    #profilePic {
+      position:absolute;top:20px;right:20px;width:40px;height:40px;
+      border-radius:50%;display:none;cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Bookmark Saya</h1>
+  <p id="userName"></p>
+  <img id="profilePic" src="" alt="Profile">
+
+  <div id="bookmarksList">Memuat bookmark...</div>
+
+  <script>
+    let currentUser = null;
+
+    function handleCredentialResponse(response) {
+      const data = parseJwt(response.credential);
+      currentUser = { name:data.name, email:data.email, picture:data.picture };
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      document.getElementById("profilePic").src = currentUser.picture;
+      document.getElementById("profilePic").style.display = "block";
+      document.getElementById("userName").innerText = "Halo, " + currentUser.name;
+      loadBookmarks();
+    }
+
+    function parseJwt(token) {
+      let base64Url = token.split('.')[1];
+      let base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
+      let jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+        '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(jsonPayload);
+    }
+
+    function loadBookmarks() {
+      if (!currentUser) return;
+      const bookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
+      let container = document.getElementById("bookmarksList");
+      container.innerHTML = "";
+      if (Object.keys(bookmarks).length === 0) {
+        container.innerHTML = "<p>Belum ada bookmark disimpan.</p>";
+        return;
+      }
+      for (let link in bookmarks) {
+        let item = bookmarks[link];
+        let div = document.createElement("div");
+        div.className = "bookmark-card";
+        div.innerHTML = `
+          <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
+          <button onclick="removeBookmark('${item.link}')">❌ Hapus</button>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function removeBookmark(link) {
+      let bookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
+      delete bookmarks[link];
+      localStorage.setItem("bookmarks_" + currentUser.email, JSON.stringify(bookmarks));
+      loadBookmarks();
+    }
+  </script>
+
+  <div id="g_id_onload"
+       data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
+       data-callback="handleCredentialResponse"
+       data-auto_select="true"
+       data-itp_support="true">
+  </div>
+</body>
+</html>
