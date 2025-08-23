@@ -1,89 +1,168 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WHARSA - Bookmark Saya</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    body { font-family: 'Inter', sans-serif; padding:20px; background:#f9f9f9; }
-    h1 { color:#4361ee; }
-    .bookmark-card {
-      background:#fff; padding:15px; margin:10px 0; border-radius:10px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    :root {
+      --primary-color: #4361ee;
+      --primary-light: #e0e5ff;
+      --bg-color: #f7f8fc;
+      --card-bg: #ffffff;
+      --text: #222;
+      --text-light: #666;
+      --border: 1px solid rgba(0,0,0,.08);
+      --shadow: 0 2px 10px rgba(0,0,0,.05);
+      --radius: 12px;
     }
-    .bookmark-card h3 { margin:0 0 8px; font-size:1.1rem; }
-    .bookmark-card a { color:#4361ee; text-decoration:none; }
-    .bookmark-card a:hover { text-decoration:underline; }
-    #profilePic {
-      position:absolute;top:20px;right:20px;width:40px;height:40px;
-      border-radius:50%;display:none;cursor:pointer;
-    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text); margin: 0; padding: 20px; }
+    h1 { color: var(--primary-color); margin: 0 0 6px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    #profilePic { width: 40px; height: 40px; border-radius: 50%; display: none; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    input { padding: 10px 12px; border-radius: var(--radius); border: var(--border); font-family: inherit; flex: 1; min-width: 200px; }
+    button, a.btn { padding: 8px 14px; border-radius: var(--radius); border: var(--border); background: #fff; cursor: pointer;
+      font-family: inherit; text-decoration: none; color: var(--text); box-shadow: var(--shadow); transition: 0.2s; }
+    button:hover, a.btn:hover { background: var(--primary-light); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 15px; }
+    .card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
+    .title { font-weight: 600; margin-bottom: 6px; }
+    .title a { color: var(--primary-color); text-decoration: none; }
+    .title a:hover { text-decoration: underline; }
+    .url { font-size: 13px; color: var(--text-light); margin-bottom: 10px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chip { background: var(--primary-light); color: var(--primary-color); padding: 3px 8px; border-radius: 999px; font-size: 12px; }
+    .row { display: flex; gap: 8px; }
+    .empty { padding: 30px; text-align: center; color: var(--text-light); }
   </style>
 </head>
 <body>
-  <h1>📚 Bookmark Saya</h1>
-  <p id="userName"></p>
-  <img id="profilePic" src="" alt="Profile">
+  <div class="topbar">
+    <div>
+      <h1>🔖 Bookmark Saya</h1>
+      <div id="hello" style="color:var(--text-light)"></div>
+    </div>
+    <img id="profilePic" alt="profile">
+  </div>
 
-  <div id="bookmarksList">Memuat bookmark...</div>
-
-  <script>
-    let currentUser = null;
-
-    function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      currentUser = { name:data.name, email:data.email, picture:data.picture };
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      document.getElementById("profilePic").src = currentUser.picture;
-      document.getElementById("profilePic").style.display = "block";
-      document.getElementById("userName").innerText = "Halo, " + currentUser.name;
-      loadBookmarks();
-    }
-
-    function parseJwt(token) {
-      let base64Url = token.split('.')[1];
-      let base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
-      let jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-        '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-      return JSON.parse(jsonPayload);
-    }
-
-    function loadBookmarks() {
-      if (!currentUser) return;
-      const bookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
-      let container = document.getElementById("bookmarksList");
-      container.innerHTML = "";
-      if (Object.keys(bookmarks).length === 0) {
-        container.innerHTML = "<p>Belum ada bookmark disimpan.</p>";
-        return;
-      }
-      for (let link in bookmarks) {
-        let item = bookmarks[link];
-        let div = document.createElement("div");
-        div.className = "bookmark-card";
-        div.innerHTML = `
-          <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-          <button onclick="removeBookmark('${item.link}')">❌ Hapus</button>
-        `;
-        container.appendChild(div);
-      }
-    }
-
-    function removeBookmark(link) {
-      let bookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
-      delete bookmarks[link];
-      localStorage.setItem("bookmarks_" + currentUser.email, JSON.stringify(bookmarks));
-      loadBookmarks();
-    }
-  </script>
-
+  <!-- Google Login -->
   <div id="g_id_onload"
        data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
        data-callback="handleCredentialResponse"
        data-auto_select="true"
        data-itp_support="true">
   </div>
+
+  <div class="controls">
+    <input id="search" placeholder="Cari judul...">
+    <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
+    <button onclick="clearFilters()">Reset</button>
+    <a href="indeks.html" class="btn">← Kembali</a>
+  </div>
+
+  <div id="list" class="grid"></div>
+  <div id="empty" class="empty" style="display:none">Belum ada bookmark.</div>
+
+<script>
+  let currentUser = null;
+  function handleCredentialResponse(response) {
+    const data = parseJwt(response.credential);
+    currentUser = { name: data.name, email: data.email, picture: data.picture };
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    updateUserUI();
+    render();
+  }
+
+  function parseJwt(token) {
+    let base64Url = token.split('.')[1];
+    let base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
+    let jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+      '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(jsonPayload);
+  }
+
+  function KEY() { return "bookmarks_" + (currentUser?.email || "guest"); }
+
+  function updateUserUI(){
+    const hello = document.getElementById("hello");
+    const pic = document.getElementById("profilePic");
+    if (currentUser) {
+      hello.textContent = "Halo, " + (currentUser.name || currentUser.email);
+      if (currentUser.picture){ pic.src = currentUser.picture; pic.style.display="block"; }
+    } else {
+      hello.textContent = "Mode tamu (belum login)";
+    }
+  }
+
+  function load() { return Object.values(JSON.parse(localStorage.getItem(KEY()) || "{}")); }
+  function save(map) { localStorage.setItem(KEY(), JSON.stringify(map)); }
+  function remove(link) {
+    const map = JSON.parse(localStorage.getItem(KEY()) || "{}");
+    delete map[link]; save(map); render();
+  }
+  function editTags(link) {
+    const map = JSON.parse(localStorage.getItem(KEY()) || "{}");
+    const item = map[link];
+    const input = prompt("Ubah tag (pisahkan koma):", (item.tags||[]).join(", "));
+    if (input===null) return;
+    item.tags = input.split(",").map(t=>t.trim()).filter(Boolean);
+    map[link] = item; save(map); render();
+  }
+
+  function matchesFilter(item, q, tagStr) {
+    const okTitle = !q || (item.title||"").toLowerCase().includes(q);
+    if (!okTitle) return false;
+    if (!tagStr) return true;
+    const need = tagStr.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+    const have = (item.tags||[]).map(t=>t.toLowerCase());
+    return need.every(t => have.includes(t));
+  }
+
+  function render() {
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    list.innerHTML = "";
+    const q = document.getElementById("search").value.trim().toLowerCase();
+    const tagStr = document.getElementById("tagFilter").value.trim().toLowerCase();
+    const items = load().filter(it => matchesFilter(it, q, tagStr));
+    if (items.length === 0) { empty.style.display = "block"; return; }
+    else empty.style.display = "none";
+
+    items.forEach(it => {
+      const host = (() => { try { return new URL(it.link).hostname.replace(/^www\\./,''); } catch(e){ return it.link; }})();
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div>
+          <div class="title"><a href="${it.link}" target="_blank">${it.title}</a></div>
+          <div class="url">${host}</div>
+          <div class="tags">${(it.tags||[]).map(t=>'<span class="chip">#'+t+'</span>').join('')}</div>
+        </div>
+        <div class="row">
+          <button onclick="editTags('${it.link.replace("'", "%27")}')">✏️ Edit Tag</button>
+          <button onclick="remove('${it.link.replace("'", "%27")}')">🗑️ Hapus</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function clearFilters(){
+    document.getElementById("search").value="";
+    document.getElementById("tagFilter").value="";
+    render();
+  }
+
+  document.getElementById("search").addEventListener("input", render);
+  document.getElementById("tagFilter").addEventListener("input", render);
+
+  // initial
+  try { currentUser = JSON.parse(localStorage.getItem("currentUser") || "null"); } catch(e){}
+  updateUserUI();
+  render();
+</script>
 </body>
 </html>
