@@ -4,86 +4,856 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WHARSA - Bookmark Saya</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    body { font-family: 'Inter', sans-serif; padding:20px; background:#f9f9f9; }
-    h1 { color:#4361ee; }
-    .bookmark-card {
-      background:#fff; padding:15px; margin:10px 0; border-radius:10px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    :root {
+      --primary-color: #4361ee;
+      --primary-light: #e0e5ff;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --text-color: #333;
+      --text-light: #6c757d;
+      --bg-color: #ffffff;
+      --card-bg: #ffffff;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      --border-radius: 12px;
+      --border: 1px solid rgba(0, 0, 0, 0.08);
+      --transition: all 0.2s ease;
     }
-    .bookmark-card h3 { margin:0 0 8px; font-size:1.1rem; }
-    .bookmark-card a { color:#4361ee; text-decoration:none; }
-    .bookmark-card a:hover { text-decoration:underline; }
-    #profilePic {
-      position:absolute;top:20px;right:20px;width:40px;height:40px;
-      border-radius:50%;display:none;cursor:pointer;
+
+    .dark-mode {
+      --primary-color: #4895ef;
+      --primary-light: #1e2b6b;
+      --secondary-color: #4361ee;
+      --accent-color: #3f37c9;
+      --light-color: #1e1e1e;
+      --dark-color: #f8f9fa;
+      --text-color: #f1f1f1;
+      --text-light: #adb5bd;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      --border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      transition: var(--transition);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: var(--border);
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-info {
+      text-align: right;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    .user-email {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid var(--primary-color);
+    }
+
+    .sign-out-btn {
+      padding: 8px 16px;
+      background-color: transparent;
+      color: var(--text-light);
+      border: 1px solid var(--text-light);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .sign-out-btn:hover {
+      background-color: #ff6b6b;
+      color: white;
+      border-color: #ff6b6b;
+    }
+
+    .page-title {
+      font-size: 2rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 20px;
+      padding-left: 40px;
+      border: var(--border);
+      border-radius: var(--border-radius);
+      background-color: var(--card-bg);
+      color: var(--text-color);
+      font-size: 1rem;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+    }
+
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tag-filter {
+      padding: 8px 16px;
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      border-radius: 50px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+    }
+
+    .tag-filter:hover, .tag-filter.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .bookmarks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .bookmark-card {
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      border: var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bookmark-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .bookmark-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .bookmark-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+      flex: 1;
+    }
+
+    .bookmark-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .bookmark-title a:hover {
+      text-decoration: underline;
+    }
+
+    .bookmark-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .bookmark-action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: var(--text-light);
+      transition: var(--transition);
+    }
+
+    .bookmark-action-btn:hover {
+      color: var(--primary-color);
+    }
+
+    .bookmark-snippet {
+      color: var(--text-color);
+      margin-bottom: 15px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .bookmark-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .bookmark-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .bookmark-tag {
+      padding: 4px 10px;
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      border-radius: 50px;
+      font-size: 0.8rem;
+    }
+
+    .bookmark-date {
+      color: var(--text-light);
+      font-size: 0.8rem;
+    }
+
+    .no-bookmarks {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+
+    .no-bookmarks img {
+      width: 100px;
+      height: auto;
+      margin-bottom: 20px;
+      opacity: 0.7;
+    }
+
+    .auth-container {
+      text-align: center;
+      max-width: 400px;
+      margin: 50px auto;
+    }
+
+    .auth-message {
+      margin-bottom: 20px;
+      color: var(--text-light);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: var(--card-bg);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 500px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      color: var(--primary-color);
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: var(--border);
+      border-radius: var(--border-radius);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .form-hint {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-top: 5px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--text-light);
+      border: 1px solid var(--text-light);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--text-light);
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: #ff6b6b;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #ff5252;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+      
+      .user-profile {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .user-info {
+        text-align: center;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+      
+      .bookmarks-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>📚 Bookmark Saya</h1>
-  <p id="userName"></p>
-  <img id="profilePic" src="" alt="Profile">
+  <div class="container">
+    <header>
+      <div class="logo">WHARSA</div>
+      <div id="authContainer" class="auth-container">
+        <!-- Auth content will be loaded here -->
+      </div>
+    </header>
 
-  <div id="bookmarksList">Memuat bookmark...</div>
+    <main>
+      <h1 class="page-title">📚 Bookmark Saya</h1>
+      
+      <div id="controlsContainer" class="controls" style="display: none;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="Cari judul bookmark...">
+        </div>
+        
+        <div class="filter-tags">
+          <span>Filter tag:</span>
+          <div id="tagFilters">
+            <!-- Tag filters will be loaded here -->
+          </div>
+        </div>
+      </div>
+      
+      <div id="bookmarksContainer" class="bookmarks-grid">
+        <!-- Bookmarks will be loaded here -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit Bookmark Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Bookmark</h2>
+        <button class="close-modal" onclick="closeModal()">×</button>
+      </div>
+      <form id="editForm">
+        <input type="hidden" id="editBookmarkLink">
+        <div class="form-group">
+          <label for="editBookmarkTitle" class="form-label">Judul</label>
+          <input type="text" id="editBookmarkTitle" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="editBookmarkTags" class="form-label">Tag (pisahkan dengan koma)</label>
+          <input type="text" id="editBookmarkTags" class="form-input" placeholder="contoh: pendidikan, penelitian, sains">
+          <p class="form-hint">Gunakan tag untuk mengkategorikan bookmark Anda</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Hapus Bookmark</h2>
+        <button class="close-modal" onclick="closeModal()">×</button>
+      </div>
+      <p>Apakah Anda yakin ingin menghapus bookmark ini?</p>
+      <p id="deleteBookmarkTitle" style="font-weight: 600; margin: 10px 0;"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Hapus</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let currentUser = null;
+    let allBookmarks = [];
+    let currentTags = [];
+    let bookmarkToDelete = null;
 
+    // Initialize Google Sign-In
+    function initializeGoogleSignIn() {
+      if (typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+          client_id: '1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com',
+          callback: handleCredentialResponse
+        });
+        
+        google.accounts.id.renderButton(
+          document.getElementById('googleSignInButton'),
+          { theme: 'outline', size: 'large', width: '250px' }
+        );
+      }
+    }
+
+    // Handle Google Sign-In response
     function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      currentUser = { name:data.name, email:data.email, picture:data.picture };
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      document.getElementById("profilePic").src = currentUser.picture;
-      document.getElementById("profilePic").style.display = "block";
-      document.getElementById("userName").innerText = "Halo, " + currentUser.name;
+      const userData = parseJwt(response.credential);
+      currentUser = {
+        name: userData.name,
+        email: userData.email,
+        picture: userData.picture
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      updateUIAfterAuth();
       loadBookmarks();
     }
 
+    // Parse JWT token
     function parseJwt(token) {
-      let base64Url = token.split('.')[1];
-      let base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
-      let jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-        '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
       return JSON.parse(jsonPayload);
     }
 
+    // Update UI after authentication
+    function updateUIAfterAuth() {
+      const authContainer = document.getElementById('authContainer');
+      const controlsContainer = document.getElementById('controlsContainer');
+      
+      if (currentUser) {
+        authContainer.innerHTML = `
+          <div class="user-profile">
+            <div class="user-info">
+              <div class="user-name">${currentUser.name}</div>
+              <div class="user-email">${currentUser.email}</div>
+            </div>
+            <img src="${currentUser.picture}" alt="Profile" class="user-avatar">
+            <button class="sign-out-btn" onclick="signOut()">Keluar</button>
+          </div>
+        `;
+        
+        controlsContainer.style.display = 'flex';
+      } else {
+        authContainer.innerHTML = `
+          <div class="auth-message">
+            <p>Silakan login untuk melihat bookmark Anda</p>
+          </div>
+          <div id="googleSignInButton"></div>
+        `;
+        
+        controlsContainer.style.display = 'none';
+        initializeGoogleSignIn();
+      }
+    }
+
+    // Sign out
+    function signOut() {
+      if (typeof google !== 'undefined') {
+        google.accounts.id.disableAutoSelect();
+      }
+      
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      updateUIAfterAuth();
+      
+      document.getElementById('bookmarksContainer').innerHTML = `
+        <div class="no-bookmarks">
+          <img src="https://cdn-icons-png.flaticon.com/512/3884/3884310.png" alt="No bookmarks">
+          <p>Silakan login untuk melihat bookmark Anda</p>
+        </div>
+      `;
+    }
+
+    // Load bookmarks from localStorage
     function loadBookmarks() {
       if (!currentUser) return;
-      const bookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
-      let container = document.getElementById("bookmarksList");
-      container.innerHTML = "";
-      if (Object.keys(bookmarks).length === 0) {
-        container.innerHTML = "<p>Belum ada bookmark disimpan.</p>";
+      
+      const bookmarksKey = `bookmarks_${currentUser.email}`;
+      const bookmarksData = localStorage.getItem(bookmarksKey);
+      
+      if (bookmarksData) {
+        allBookmarks = JSON.parse(bookmarksData);
+        renderBookmarks(allBookmarks);
+        extractAndRenderTags();
+      } else {
+        document.getElementById('bookmarksContainer').innerHTML = `
+          <div class="no-bookmarks">
+            <img src="https://cdn-icons-png.flaticon.com/512/3884/3884310.png" alt="No bookmarks">
+            <p>Belum ada bookmark yang disimpan</p>
+          </div>
+        `;
+      }
+    }
+
+    // Render bookmarks to the UI
+    function renderBookmarks(bookmarks) {
+      const container = document.getElementById('bookmarksContainer');
+      
+      if (bookmarks.length === 0) {
+        container.innerHTML = `
+          <div class="no-bookmarks">
+            <img src="https://cdn-icons-png.flaticon.com/512/3884/3884310.png" alt="No bookmarks">
+            <p>Tidak ada bookmark yang cocok dengan pencarian Anda</p>
+          </div>
+        `;
         return;
       }
-      for (let link in bookmarks) {
-        let item = bookmarks[link];
-        let div = document.createElement("div");
-        div.className = "bookmark-card";
-        div.innerHTML = `
-          <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-          <button onclick="removeBookmark('${item.link}')">❌ Hapus</button>
+      
+      let html = '';
+      
+      bookmarks.forEach(bookmark => {
+        const date = new Date(bookmark.date);
+        const formattedDate = date.toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+        
+        html += `
+          <div class="bookmark-card">
+            <div class="bookmark-header">
+              <h3 class="bookmark-title">
+                <a href="${bookmark.link}" target="_blank">${bookmark.title}</a>
+              </h3>
+              <div class="bookmark-actions">
+                <button class="bookmark-action-btn" onclick="editBookmark('${bookmark.link}')" title="Edit">✏️</button>
+                <button class="bookmark-action-btn" onclick="showDeleteConfirm('${bookmark.link}', '${bookmark.title.replace(/'/g, "\\'")}')" title="Hapus">🗑️</button>
+              </div>
+            </div>
+            <p class="bookmark-snippet">${bookmark.snippet}</p>
+            <div class="bookmark-meta">
+              <div class="bookmark-tags">
+                ${bookmark.tags && bookmark.tags.length > 0 ? 
+                  bookmark.tags.map(tag => `<span class="bookmark-tag">${tag}</span>`).join('') : 
+                  '<span class="bookmark-tag">tanpa-tag</span>'
+                }
+              </div>
+              <span class="bookmark-date">${formattedDate}</span>
+            </div>
+          </div>
         `;
-        container.appendChild(div);
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // Extract tags from all bookmarks and render filter options
+    function extractAndRenderTags() {
+      const allTags = new Set();
+      
+      allBookmarks.forEach(bookmark => {
+        if (bookmark.tags && bookmark.tags.length > 0) {
+          bookmark.tags.forEach(tag => allTags.add(tag.trim().toLowerCase()));
+        }
+      });
+      
+      currentTags = Array.from(allTags).sort();
+      const tagFiltersContainer = document.getElementById('tagFilters');
+      
+      if (currentTags.length > 0) {
+        let tagsHtml = '';
+        currentTags.forEach(tag => {
+          tagsHtml += `<button class="tag-filter" onclick="filterByTag('${tag}')">${tag}</button>`;
+        });
+        
+        tagsHtml += `<button class="tag-filter" onclick="clearTagFilter()">Semua</button>`;
+        tagFiltersContainer.innerHTML = tagsHtml;
+      } else {
+        tagFiltersContainer.innerHTML = '<span>Tidak ada tag</span>';
       }
     }
 
-    function removeBookmark(link) {
-      let bookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
-      delete bookmarks[link];
-      localStorage.setItem("bookmarks_" + currentUser.email, JSON.stringify(bookmarks));
-      loadBookmarks();
+    // Filter bookmarks by tag
+    function filterByTag(tag) {
+      const filteredBookmarks = allBookmarks.filter(bookmark => 
+        bookmark.tags && bookmark.tags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
+      );
+      
+      // Update active state of tag buttons
+      document.querySelectorAll('.tag-filter').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      event.target.classList.add('active');
+      renderBookmarks(filteredBookmarks);
     }
-  </script>
 
-  <div id="g_id_onload"
-       data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-       data-callback="handleCredentialResponse"
-       data-auto_select="true"
-       data-itp_support="true">
-  </div>
+    // Clear tag filter
+    function clearTagFilter() {
+      renderBookmarks(allBookmarks);
+      
+      // Remove active state from all tag buttons
+      document.querySelectorAll('.tag-filter').forEach(btn => {
+        btn.classList.remove('active');
+      });
+    }
+
+    // Search bookmarks by title
+    function setupSearch() {
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        if (searchTerm === '') {
+          renderBookmarks(allBookmarks);
+          return;
+        }
+        
+        const filteredBookmarks = allBookmarks.filter(bookmark => 
+          bookmark.title.toLowerCase().includes(searchTerm)
+        );
+        
+        renderBookmarks(filteredBookmarks);
+      });
+    }
+
+    // Edit bookmark
+    function editBookmark(link) {
+      const bookmark = allBookmarks.find(b => b.link === link);
+      
+      if (bookmark) {
+        document.getElementById('editBookmarkLink').value = bookmark.link;
+        document.getElementById('editBookmarkTitle').value = bookmark.title;
+        document.getElementById('editBookmarkTags').value = bookmark.tags ? bookmark.tags.join(', ') : '';
+        
+        document.getElementById('editModal').style.display = 'flex';
+      }
+    }
+
+    // Show delete confirmation
+    function showDeleteConfirm(link, title) {
+      bookmarkToDelete = link;
+      document.getElementById('deleteBookmarkTitle').textContent = title;
+      document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    // Confirm delete
+    function confirmDelete() {
+      if (bookmarkToDelete && currentUser) {
+        const bookmarksKey = `bookmarks_${currentUser.email}`;
+        const updatedBookmarks = allBookmarks.filter(b => b.link !== bookmarkToDelete);
+        
+        localStorage.setItem(bookmarksKey, JSON.stringify(updatedBookmarks));
+        allBookmarks = updatedBookmarks;
+        
+        renderBookmarks(allBookmarks);
+        extractAndRenderTags();
+        closeModal();
+      }
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('editModal').style.display = 'none';
+      document.getElementById('deleteModal').style.display = 'none';
+      bookmarkToDelete = null;
+    }
+
+    // Handle edit form submission
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const link = document.getElementById('editBookmarkLink').value;
+      const title = document.getElementById('editBookmarkTitle').value;
+      const tags = document.getElementById('editBookmarkTags').value;
+      
+      const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+      
+      if (currentUser) {
+        const bookmarksKey = `bookmarks_${currentUser.email}`;
+        const updatedBookmarks = allBookmarks.map(bookmark => {
+          if (bookmark.link === link) {
+            return {
+              ...bookmark,
+              title: title,
+              tags: tagArray
+            };
+          }
+          return bookmark;
+        });
+        
+        localStorage.setItem(bookmarksKey, JSON.stringify(updatedBookmarks));
+        allBookmarks = updatedBookmarks;
+        
+        renderBookmarks(allBookmarks);
+        extractAndRenderTags();
+        closeModal();
+      }
+    });
+
+    // Initialize the page
+    function init() {
+      // Check if user is already logged in
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        updateUIAfterAuth();
+        loadBookmarks();
+      } else {
+        updateUIAfterAuth();
+      }
+      
+      setupSearch();
+    }
+
+    // Run initialization when page loads
+    window.onload = init;
+  </script>
 </body>
 </html>
