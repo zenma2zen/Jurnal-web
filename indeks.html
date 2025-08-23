@@ -10,6 +10,7 @@
     const API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
     const CX = "332c680f2381f4787";
     const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
+    const GOOGLE_CLIENT_ID = "1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com";
 
     let currentPage = 1;
     let lastQuery = "";
@@ -17,6 +18,108 @@
     let selectedYearStart = "";
     let selectedYearEnd = "";
     let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+    let userBookmarks = {};
+
+    // Fungsi untuk memeriksa dan memulihkan status login
+    function checkLoginStatus() {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        updateUIAfterAuth();
+        loadBookmarks();
+      }
+    }
+
+    // Fungsi untuk memuat bookmark
+    function loadBookmarks() {
+      if (!currentUser) return;
+      const bookmarksKey = `bookmarks_${currentUser.email}`;
+      const savedBookmarks = localStorage.getItem(bookmarksKey);
+      userBookmarks = savedBookmarks ? JSON.parse(savedBookmarks) : {};
+    }
+
+    // Fungsi untuk menyimpan bookmark
+    function saveBookmarks() {
+      if (!currentUser) return;
+      const bookmarksKey = `bookmarks_${currentUser.email}`;
+      localStorage.setItem(bookmarksKey, JSON.stringify(userBookmarks));
+    }
+
+    // Handle Google Sign-In
+    function handleCredentialResponse(response) {
+      const data = parseJwt(response.credential);
+      currentUser = {
+        name: data.name,
+        email: data.email,
+        picture: data.picture
+      };
+      
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      document.getElementById("profilePic").src = currentUser.picture;
+      document.getElementById("profilePic").style.display = "block";
+      document.getElementById("googleSignIn").style.display = "none";
+      
+      loadBookmarks();
+      updateUIAfterAuth();
+    }
+
+    function parseJwt(token) {
+      let base64Url = token.split('.')[1];
+      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    }
+
+    function signOut() {
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      document.getElementById("profilePic").style.display = "none";
+      document.getElementById("googleSignIn").style.display = "block";
+      userBookmarks = {};
+      updateUIAfterAuth();
+    }
+
+    function toggleBookmark(link, title) {
+      if (!currentUser) {
+        alert("Silakan login dengan akun Google untuk menambahkan bookmark.");
+        return;
+      }
+      
+      if (userBookmarks[link]) {
+        delete userBookmarks[link];
+      } else {
+        userBookmarks[link] = { 
+          title: title, 
+          link: link, 
+          date: new Date().toISOString() 
+        };
+      }
+      
+      saveBookmarks();
+      
+      // Refresh tampilan hasil pencarian untuk memperbarui status bookmark
+      if (lastQuery) {
+        searchJournals(lastQuery, currentPage);
+      }
+    }
+
+    function updateUIAfterAuth() {
+      // Update tampilan tombol bookmark di hasil pencarian
+      const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
+      bookmarkButtons.forEach(btn => {
+        const link = btn.getAttribute('data-link');
+        if (userBookmarks[link]) {
+          btn.innerHTML = '★';
+          btn.classList.add('bookmarked');
+        } else {
+          btn.innerHTML = '☆';
+          btn.classList.remove('bookmarked');
+        }
+      });
+    }
 
     async function fetchLatestNews() {
       try {
@@ -128,20 +231,27 @@
         
         data.items.forEach(item => {
           let resultItem = document.createElement("div");
+          resultItem.classList.add("result-card");
+          
+          const isBookmarked = userBookmarks[item.link] ? true : false;
+          
           resultItem.innerHTML = `
-  <div class="result-content">
-    <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-    <p class="result-url">${new URL(item.link).hostname.replace('www.', '')}</p>
-    <p class="result-snippet">${item.snippet}</p>
-    <div class="result-meta">
-      ${extractYearFromResult(item.snippet) ? `<span class="result-year">${extractYearFromResult(item.snippet)}</span>` : ''}
-      <button onclick="toggleBookmark('${item.link}', '${item.title.replace(/'/g,"")}' )" 
-              style="margin-left:10px;cursor:pointer;">
-        ${userBookmarks[item.link] ? "🔖 Hapus Bookmark" : "📌 Tambah Bookmark"}
-      </button>
-    </div>
-  </div>
-`;
+            <div class="result-content">
+              <div class="result-header">
+                <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
+                <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                        data-link="${item.link}"
+                        onclick="toggleBookmark('${item.link}', '${item.title.replace(/'/g, "\\'")}')">
+                  ${isBookmarked ? '★' : '☆'}
+                </button>
+              </div>
+              <p class="result-url">${new URL(item.link).hostname.replace('www.', '')}</p>
+              <p class="result-snippet">${item.snippet}</p>
+              <div class="result-meta">
+                ${extractYearFromResult(item.snippet) ? `<span class="result-year">${extractYearFromResult(item.snippet)}</span>` : ''}
+              </div>
+            </div>
+          `;
           resultsGrid.appendChild(resultItem);
         });
 
@@ -367,6 +477,9 @@
     }
 
     window.onload = function() {
+      // Periksa status login terlebih dahulu
+      checkLoginStatus();
+      
       fetchLatestNews();
       generateYearOptions();
       
@@ -378,56 +491,6 @@
       document.getElementById("searchInput").focus();
     };
   </script>
-  <script>
-  let currentUser = null;
-  let userBookmarks = {};
-
-  function handleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
-    currentUser = {
-      name: data.name,
-      email: data.email,
-      picture: data.picture
-    };
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    document.getElementById("profilePic").src = currentUser.picture;
-    document.getElementById("profilePic").style.display = "block";
-    loadBookmarks();
-  }
-
-  function parseJwt(token) {
-    let base64Url = token.split('.')[1];
-    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  }
-
-  function loadBookmarks() {
-    if (!currentUser) return;
-    userBookmarks = JSON.parse(localStorage.getItem("bookmarks_" + currentUser.email)) || {};
-  }
-
-  function saveBookmarks() {
-    if (!currentUser) return;
-    localStorage.setItem("bookmarks_" + currentUser.email, JSON.stringify(userBookmarks));
-  }
-
-  function toggleBookmark(link, title) {
-    if (!currentUser) {
-      alert("Silakan login dengan akun Google untuk menambahkan bookmark.");
-      return;
-    }
-    if (userBookmarks[link]) {
-      delete userBookmarks[link];
-    } else {
-      userBookmarks[link] = { title, link };
-    }
-    saveBookmarks();
-    displayResults(lastSearchData); // refresh hasil pencarian
-  }
-</script>
   <style>
     :root {
       --primary-color: #4361ee;
@@ -489,6 +552,7 @@
       text-align: center;
       margin-bottom: 30px;
       padding: 20px 0;
+      position: relative;
     }
 
     #logo {
@@ -504,6 +568,52 @@
       margin-bottom: 15px;
       font-size: 1rem;
       font-weight: 400;
+    }
+
+    .user-menu {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--primary-color);
+      cursor: pointer;
+    }
+
+    .user-name {
+      font-weight: 500;
+      color: var(--text-color);
+      font-size: 14px;
+    }
+
+    .sign-out-btn {
+      padding: 8px 12px;
+      background-color: transparent;
+      color: var(--text-light);
+      border: 1px solid var(--text-light);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 12px;
+      transition: var(--transition);
+    }
+
+    .sign-out-btn:hover {
+      background-color: #ff6b6b;
+      color: white;
+      border-color: #ff6b6b;
     }
 
     .search-container {
@@ -731,10 +841,18 @@
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
 
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
     .result-card h3 {
       margin-bottom: 10px;
       font-size: 1.1rem;
       font-weight: 600;
+      flex: 1;
     }
 
     .result-card h3 a {
@@ -745,6 +863,27 @@
 
     .result-card h3 a:hover {
       text-decoration: underline;
+    }
+
+    .bookmark-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+      color: var(--text-light);
+      transition: var(--transition);
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+
+    .bookmark-btn:hover {
+      color: var(--accent-color);
+      transform: scale(1.1);
+    }
+
+    .bookmark-btn.bookmarked {
+      color: #ffd700;
     }
 
     .result-url {
@@ -1094,6 +1233,12 @@
         font-size: 0.9rem;
       }
       
+      .user-menu {
+        position: static;
+        justify-content: center;
+        margin-bottom: 15px;
+      }
+      
       .search-box {
         flex-direction: column;
       }
@@ -1191,17 +1336,24 @@
 <body>
   <div class="container">
     <header>
-      <div id="userMenu" style="position:absolute;top:20px;right:20px;">
-  <div id="g_id_onload"
-       data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-       data-callback="handleCredentialResponse"
-       data-auto_select="true"
-       data-itp_support="true">
-  </div>
-  <div class="g_id_signin" data-type="icon" data-size="large"></div>
-  <img id="profilePic" src="" alt="Profile" 
-       style="display:none;width:40px;height:40px;border-radius:50%;cursor:pointer;">
-</div>
+      <div class="user-menu">
+        <div id="googleSignIn">
+          <div id="g_id_onload"
+               data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
+               data-callback="handleCredentialResponse"
+               data-auto_select="true"
+               data-itp_support="true">
+          </div>
+          <div class="g_id_signin" data-type="icon" data-size="large"></div>
+        </div>
+        <div id="userProfile" style="display:none;">
+          <div class="user-profile">
+            <img id="profilePic" src="" alt="Profile" class="user-avatar">
+            <span class="user-name" id="userName"></span>
+            <button onclick="signOut()" class="sign-out-btn">Keluar</button>
+          </div>
+        </div>
+      </div>
 
       <div id="logo">WHARSA</div>
       <p class="tagline">Wahasa Academic Reference Search Assistant</p>
@@ -1267,7 +1419,14 @@
       <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
         <span>📖</span>
         <span>Perpustakaan</span>
-        <a href="bookmarks.html" class="mobile-nav-item">
-  <span>🔖</span>
-  <span>Bookmark</span>
-</a>
+      </a>
+      <a href="bookmarks.html" class="mobile-nav-item">
+        <span>🔖</span>
+        <span>Bookmark</span>
+      </a>
+    </div>
+  </div>
+
+  <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
+</body>
+</html>
