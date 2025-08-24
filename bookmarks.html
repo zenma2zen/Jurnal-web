@@ -27,6 +27,24 @@
     .empty { padding:30px; text-align:center; color:#999; }
     #loginContainer { text-align: center; margin: 30px 0; }
     .loading { color: #666; font-style: italic; }
+    .error-box { 
+      background: #ffebee; 
+      color: #c62828; 
+      padding: 12px; 
+      border-radius: 8px; 
+      margin: 15px 0; 
+      display: none;
+      border-left: 4px solid #c62828;
+    }
+    .success-box { 
+      background: #e8f5e9; 
+      color: #2e7d32; 
+      padding: 12px; 
+      border-radius: 8px; 
+      margin: 15px 0; 
+      display: none;
+      border-left: 4px solid #2e7d32;
+    }
   </style>
 </head>
 <body>
@@ -38,9 +56,14 @@
     <img id="profilePic" alt="profile">
   </div>
 
+  <div id="errorBox" class="error-box"></div>
+  <div id="successBox" class="success-box"></div>
+
   <!-- Konten hanya ditampilkan jika sudah login -->
   <div id="loginContainer">
-    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline" data-size="large"></div>
+    <h2>Login untuk Mengelola Bookmark</h2>
+    <p>Anda perlu login dengan Google untuk menyimpan dan mengakses bookmark Anda.</p>
+    <div id="googleSignIn"></div>
     <p class="loading" id="loadingText" style="display: none;">Memuat data...</p>
   </div>
 
@@ -63,6 +86,7 @@
   let userBookmarks = {};
   let gAccessToken = null;
   const DRIVE_FILE_NAME = "WHARSA_bookmarks.json";
+  // Menggunakan Client ID yang Anda berikan
   const GOOGLE_CLIENT_ID = "1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com";
 
   // Inisialisasi Google Sign In
@@ -73,17 +97,7 @@
       gAccessToken = localStorage.getItem("gAccessToken");
     } catch (e) {
       console.error("Error parsing stored data:", e);
-    }
-
-    if (currentUser && gAccessToken) {
-      // Jika sudah login, tampilkan UI
-      showUserInterface();
-      // Coba sinkronisasi data
-      syncFromDrive();
-    } else {
-      // Jika belum login, tampilkan tombol login
-      document.getElementById("loginContainer").style.display = "block";
-      document.getElementById("contentContainer").style.display = "none";
+      showError("Terjadi kesalahan saat memuat data pengguna.");
     }
 
     // Setup Google Identity Services
@@ -93,11 +107,40 @@
       scope: "https://www.googleapis.com/auth/drive.appdata"
     });
     
-    google.accounts.id.renderButton(
-      document.querySelector(".g_id_signin"),
-      { theme: "outline", size: "large" }
-    );
+    if (currentUser && gAccessToken) {
+      // Jika sudah login, tampilkan UI
+      showUserInterface();
+      // Coba sinkronisasi data
+      syncFromDrive();
+    } else {
+      // Jika belum login, tampilkan tombol login
+      document.getElementById("loginContainer").style.display = "block";
+      document.getElementById("contentContainer").style.display = "none";
+      
+      google.accounts.id.renderButton(
+        document.getElementById("googleSignIn"),
+        { theme: "outline", size: "large", text: "continue_with" }
+      );
+    }
   };
+
+  function showError(message) {
+    const errorBox = document.getElementById("errorBox");
+    errorBox.textContent = message;
+    errorBox.style.display = "block";
+    setTimeout(() => {
+      errorBox.style.display = "none";
+    }, 5000);
+  }
+
+  function showSuccess(message) {
+    const successBox = document.getElementById("successBox");
+    successBox.textContent = message;
+    successBox.style.display = "block";
+    setTimeout(() => {
+      successBox.style.display = "none";
+    }, 3000);
+  }
 
   function handleCredentialResponse(response) {
     document.getElementById("loadingText").style.display = "block";
@@ -111,19 +154,23 @@
       client_id: GOOGLE_CLIENT_ID,
       scope: 'https://www.googleapis.com/auth/drive.appdata',
       callback: async (tokenResponse) => {
-        gAccessToken = tokenResponse.access_token;
-        localStorage.setItem("gAccessToken", gAccessToken);
-        
-        // Tampilkan UI pengguna
-        showUserInterface();
-        
-        // Sinkronisasi data dari Drive
-        await syncFromDrive();
+        if (tokenResponse && tokenResponse.access_token) {
+          gAccessToken = tokenResponse.access_token;
+          localStorage.setItem("gAccessToken", gAccessToken);
+          
+          // Tampilkan UI pengguna
+          showUserInterface();
+          
+          // Sinkronisasi data dari Drive
+          await syncFromDrive();
+        } else {
+          showError("Gagal mendapatkan token akses. Silakan coba lagi.");
+        }
         document.getElementById("loadingText").style.display = "none";
       },
       error_callback: (error) => {
         console.error("Error getting access token:", error);
-        alert("Gagal mendapatkan akses ke Google Drive. Silakan coba lagi.");
+        showError("Gagal mendapatkan akses ke Google Drive. Pastikan Anda memberikan izin yang diperlukan.");
         document.getElementById("loadingText").style.display = "none";
       }
     });
@@ -148,6 +195,7 @@
       return JSON.parse(jsonPayload);
     } catch (e) {
       console.error("Error parsing JWT:", e);
+      showError("Terjadi kesalahan dalam proses autentikasi.");
       return {};
     }
   }
@@ -164,6 +212,9 @@
     
     // Redirect ke halaman logout Google
     google.accounts.id.disableAutoSelect();
+    google.accounts.id.revoke(localStorage.getItem('currentUser')?.email, () => {
+      console.log('Consent revoked');
+    });
     
     // Tampilkan kembali tombol login
     document.getElementById("loginContainer").style.display = "block";
@@ -173,25 +224,32 @@
     
     // Render ulang tombol login
     google.accounts.id.renderButton(
-      document.querySelector(".g_id_signin"),
-      { theme: "outline", size: "large" }
+      document.getElementById("googleSignIn"),
+      { theme: "outline", size: "large", text: "continue_with" }
     );
+    
+    showSuccess("Anda telah berhasil logout.");
   }
 
   async function syncFromDrive() {
     if (!gAccessToken) {
-      alert("Silakan login dengan akun Google terlebih dahulu.");
+      showError("Silakan login dengan akun Google terlebih dahulu.");
       return;
     }
     
     try {
       // Cari file bookmark di Google Drive
       let res = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and 'appDataFolder' in parents`,
+        `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and 'appDataFolder' in parents&spaces=appDataFolder`,
         { headers: { Authorization: "Bearer " + gAccessToken }}
       );
       
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("AUTHLOST");
+        }
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       
       let files = await res.json();
       if (files.files && files.files.length > 0) {
@@ -205,23 +263,23 @@
         if (!contentRes.ok) throw new Error(`HTTP error! status: ${contentRes.status}`);
         
         userBookmarks = await contentRes.json();
-        console.log("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
+        showSuccess("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
       } else {
         // File tidak ditemukan, buat file baru
         userBookmarks = {};
         await saveToDrive();
-        console.log("📂 File baru bookmark dibuat di Google Drive.");
+        showSuccess("📂 File baru bookmark dibuat di Google Drive.");
       }
       render();
     } catch (err) {
       console.error("Sync error:", err);
       
       // Jika token expired, minta pengguna login ulang
-      if (err.message.includes("401") || err.message.includes("403")) {
-        alert("Sesi telah berakhir. Silakan login kembali.");
+      if (err.message.includes("AUTHLOST") || err.message.includes("401") || err.message.includes("403")) {
+        showError("Sesi telah berakhir. Silakan login kembali.");
         signOut();
       } else {
-        alert("⚠️ Gagal sinkronisasi. Coba ulangi.");
+        showError("⚠️ Gagal sinkronisasi. Pastikan Anda memiliki koneksi internet dan coba lagi.");
       }
     }
   }
@@ -232,7 +290,7 @@
     try {
       // Cek apakah file sudah ada
       let res = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and 'appDataFolder' in parents`,
+        `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and 'appDataFolder' in parents&spaces=appDataFolder`,
         { headers: { Authorization: "Bearer " + gAccessToken }}
       );
       
@@ -242,7 +300,7 @@
       if (files.files && files.files.length > 0) {
         // Update file yang sudah ada
         let fileId = files.files[0].id;
-        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+        let updateRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
           method: "PATCH",
           headers: { 
             Authorization: "Bearer " + gAccessToken, 
@@ -250,6 +308,8 @@
           },
           body: JSON.stringify(userBookmarks)
         });
+        
+        if (!updateRes.ok) throw new Error(`HTTP error! status: ${updateRes.status}`);
       } else {
         // Buat file baru
         const metadata = { 
@@ -262,14 +322,17 @@
         form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
         form.append("file", new Blob([JSON.stringify(userBookmarks)], { type: "application/json" }));
         
-        await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+        let createRes = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
           method: "POST",
           headers: { Authorization: "Bearer " + gAccessToken },
           body: form
         });
+        
+        if (!createRes.ok) throw new Error(`HTTP error! status: ${createRes.status}`);
       }
     } catch (err) {
       console.error("Error saving to Drive:", err);
+      showError("Gagal menyimpan ke Google Drive. Silakan coba lagi.");
       throw err;
     }
   }
@@ -356,4 +419,3 @@
 </script>
 </body>
 </html>
-
