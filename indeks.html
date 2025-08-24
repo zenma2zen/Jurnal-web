@@ -18,30 +18,33 @@
     let selectedYearStart = "";
     let selectedYearEnd = "";
     let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
-    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+    let currentUser = null;
     let userBookmarks = {};
 
     // Fungsi untuk memeriksa dan memulihkan status login
     function checkLoginStatus() {
-  const savedUser = localStorage.getItem('currentUser');
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-
-    // Update UI ke kondisi login
-    document.getElementById("profilePic").src = currentUser.picture;
-    document.getElementById("profilePic").style.display = "block";
-    document.getElementById("googleSignIn").style.display = "none";
-    document.getElementById("signOutBtn").style.display = "inline-block";
-
-    updateUIAfterAuth();
-    loadBookmarks();
-  } else {
-    // Kalau belum login
-    document.getElementById("profilePic").style.display = "none";
-    document.getElementById("googleSignIn").style.display = "block";
-    document.getElementById("signOutBtn").style.display = "none";
-  }
-}
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          // Update UI ke kondisi login
+          document.getElementById("profilePic").src = currentUser.picture;
+          document.getElementById("profilePic").style.display = "block";
+          document.getElementById("googleSignIn").style.display = "none";
+          document.getElementById("signOutBtn").style.display = "inline-block";
+          updateUIAfterAuth();
+          loadBookmarks();
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+          localStorage.removeItem('currentUser');
+        }
+      } else {
+        // Kalau belum login
+        document.getElementById("profilePic").style.display = "none";
+        document.getElementById("googleSignIn").style.display = "block";
+        document.getElementById("signOutBtn").style.display = "none";
+      }
+    }
 
     // Fungsi untuk memuat bookmark
     function loadBookmarks() {
@@ -59,46 +62,38 @@
     }
 
     // Handle Google Sign-In
-   function handleCredentialResponse(response) {
-  const data = parseJwt(response.credential);
-  currentUser = {
-    name: data.name,
-    email: data.email,
-    picture: data.picture
-  };
+    function handleCredentialResponse(response) {
+      const data = parseJwt(response.credential);
+      currentUser = {
+        name: data.name,
+        email: data.email,
+        picture: data.picture
+      };
 
-  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
-  // Update UI
-  document.getElementById("profilePic").src = currentUser.picture;
-  document.getElementById("profilePic").style.display = "block";
-  document.getElementById("googleSignIn").style.display = "none";
-  document.getElementById("signOutBtn").style.display = "inline-block";
+      // Update UI
+      document.getElementById("profilePic").src = currentUser.picture;
+      document.getElementById("profilePic").style.display = "block";
+      document.getElementById("googleSignIn").style.display = "none";
+      document.getElementById("signOutBtn").style.display = "inline-block";
 
-  loadBookmarks();
-  updateUIAfterAuth();
-}
-
-function signOut() {
-  currentUser = null;
-  localStorage.removeItem('currentUser');
-
-  // Update UI
-  document.getElementById("profilePic").style.display = "none";
-  document.getElementById("googleSignIn").style.display = "block";
-  document.getElementById("signOutBtn").style.display = "none";
-
-  userBookmarks = {};
-  updateUIAfterAuth();
-}
+      loadBookmarks();
+      updateUIAfterAuth();
+    }
 
     function parseJwt(token) {
-      let base64Url = token.split('.')[1];
-      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
+      try {
+        let base64Url = token.split('.')[1];
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        console.error("Error parsing JWT:", e);
+        return {};
+      }
     }
 
     function signOut() {
@@ -106,6 +101,7 @@ function signOut() {
       localStorage.removeItem('currentUser');
       document.getElementById("profilePic").style.display = "none";
       document.getElementById("googleSignIn").style.display = "block";
+      document.getElementById("signOutBtn").style.display = "none";
       userBookmarks = {};
       updateUIAfterAuth();
     }
@@ -116,10 +112,13 @@ function signOut() {
         return;
       }
       
-      if (userBookmarks[link]) {
-        delete userBookmarks[link];
+      // Escape karakter khusus dalam link untuk digunakan sebagai key
+      const safeLink = encodeURIComponent(link);
+      
+      if (userBookmarks[safeLink]) {
+        delete userBookmarks[safeLink];
       } else {
-        userBookmarks[link] = { 
+        userBookmarks[safeLink] = { 
           title: title, 
           link: link, 
           date: new Date().toISOString() 
@@ -138,7 +137,7 @@ function signOut() {
       // Update tampilan tombol bookmark di hasil pencarian
       const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
       bookmarkButtons.forEach(btn => {
-        const link = btn.getAttribute('data-link');
+        const link = encodeURIComponent(btn.getAttribute('data-link'));
         if (userBookmarks[link]) {
           btn.innerHTML = '★';
           btn.classList.add('bookmarked');
@@ -261,7 +260,9 @@ function signOut() {
           let resultItem = document.createElement("div");
           resultItem.classList.add("result-card");
           
-          const isBookmarked = userBookmarks[item.link] ? true : false;
+          const safeLink = encodeURIComponent(item.link);
+          const isBookmarked = userBookmarks[safeLink] ? true : false;
+          const escapedTitle = item.title.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
           
           resultItem.innerHTML = `
             <div class="result-content">
@@ -269,7 +270,7 @@ function signOut() {
                 <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
                 <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
                         data-link="${item.link}"
-                        onclick="toggleBookmark('${item.link}', '${item.title.replace(/'/g, "\\'")}')">
+                        onclick="toggleBookmark('${item.link}', '${escapedTitle}')">
                   ${isBookmarked ? '★' : '☆'}
                 </button>
               </div>
@@ -460,7 +461,7 @@ function signOut() {
         
         html += `
           <div class="history-item">
-            <div class="history-query" onclick="searchFromHistory('${item.query}')">
+            <div class="history-query" onclick="searchFromHistory('${item.query.replace(/'/g, "\\'")}')">
               ${index + 1}. ${item.query}
             </div>
             <div class="history-date">${formattedDate}</div>
@@ -503,19 +504,53 @@ function signOut() {
         document.getElementById("newsContainer").style.display = "block";
       }
     }
-   window.onload = function() {
-  checkLoginStatus(); // cek status login saat reload
 
-  fetchLatestNews();
-  generateYearOptions();
+    // Inisialisasi saat halaman dimuat
+    function initializePage() {
+      checkLoginStatus();
+      fetchLatestNews();
+      generateYearOptions();
 
-  if (localStorage.getItem("darkMode") === "true") {
-    document.body.classList.add("dark-mode");
-    document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
-  }
+      if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
+      }
 
-  document.getElementById("searchInput").focus();
-};
+      document.getElementById("searchInput").focus();
+    }
+
+    // Setup Google Identity Services setelah library dimuat
+    function initializeGoogleSignIn() {
+      if (typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: false
+        });
+        
+        // Render button jika elemen tersedia
+        const googleSignInElement = document.getElementById("googleSignIn");
+        if (googleSignInElement) {
+          google.accounts.id.renderButton(
+            googleSignInElement,
+            { theme: "outline", size: "medium", text: "signin_with", shape: "pill" }
+          );
+        }
+      }
+    }
+
+    // Event listener untuk memastikan Google library sudah dimuat
+    window.addEventListener('load', function() {
+      initializePage();
+      
+      // Cek berulang apakah Google library sudah dimuat
+      const checkGoogleLoaded = setInterval(function() {
+        if (typeof google !== 'undefined') {
+          clearInterval(checkGoogleLoaded);
+          initializeGoogleSignIn();
+        }
+      }, 100);
+    });
   </script>
   <style>
     :root {
@@ -722,6 +757,7 @@ function signOut() {
 
     .year-range-selects {
       display: flex;
+      align-items: center;
       gap: 10px;
       flex: 1;
     }
@@ -1362,36 +1398,23 @@ function signOut() {
 <body>
   <div class="container">
     <header>
-  <div id="logo">WHARSA</div>
-  <p class="tagline">Academic Reference Search</p>
+      <div id="logo">WHARSA</div>
+      <p class="tagline">Academic Reference Search</p>
 
-  <div class="user-menu">
-    <!-- Foto Profil -->
-    <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
+      <div class="user-menu">
+        <!-- Foto Profil -->
+        <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
 
-    <!-- Tombol Sign In Google -->
-    <div id="googleSignIn" class="g_id_signin"
-         data-type="standard"
-         data-shape="pill"
-         data-theme="outline"
-         data-text="signin_with"
-         data-size="medium"
-         data-logo_alignment="left">
-    </div>
+        <!-- Tombol Sign In Google -->
+        <div id="googleSignIn"></div>
 
-    <!-- Tombol Sign Out -->
-    <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
-      Keluar
-    </button>
-  </div>
-</header>
+        <!-- Tombol Sign Out -->
+        <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
+          Keluar
+        </button>
+      </div>
+    </header>
 
-<!-- Google Identity Service -->
-<div id="g_id_onload"
-     data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-     data-callback="handleCredentialResponse"
-     data-auto_prompt="false">
-</div>
     <div class="search-container">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
