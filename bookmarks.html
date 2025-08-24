@@ -45,6 +45,34 @@
       display: none;
       border-left: 4px solid #2e7d32;
     }
+    .info-box {
+      background: #e3f2fd;
+      color: #1565c0;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      border-left: 4px solid #1565c0;
+    }
+    .user-info {
+      background: #f3e5f5;
+      color: #7b1fa2;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .user-info h3 {
+      margin: 0 0 10px 0;
+      color: #7b1fa2;
+    }
+    .user-info p {
+      margin: 5px 0;
+      color: #6a1b9a;
+    }
+    .login-button-container {
+      margin: 20px 0;
+    }
   </style>
 </head>
 <body>
@@ -61,9 +89,20 @@
 
   <!-- Konten hanya ditampilkan jika sudah login -->
   <div id="loginContainer">
-    <h2>Login untuk Mengelola Bookmark</h2>
-    <p>Anda perlu login dengan Google untuk menyimpan dan mengakses bookmark Anda.</p>
-    <div id="googleSignIn"></div>
+    <div class="info-box">
+      <h2>Login untuk Mengelola Bookmark</h2>
+      <p>Untuk mengakses bookmark Anda, silakan login dengan akun Google dan pastikan memberikan izin akses ke Google Drive saat diminta.</p>
+    </div>
+    
+    <div id="userInfo" class="user-info" style="display: none;">
+      <h3>Login sebagai <span id="userName"></span></h3>
+      <p><span id="userEmail"></span></p>
+    </div>
+    
+    <div class="login-button-container">
+      <div id="googleSignIn"></div>
+    </div>
+    
     <p class="loading" id="loadingText" style="display: none;">Memuat data...</p>
   </div>
 
@@ -98,31 +137,55 @@
     } catch (e) {
       console.error("Error parsing stored data:", e);
       showError("Terjadi kesalahan saat memuat data pengguna.");
+      // Hapus data yang korup
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('gAccessToken');
     }
 
     // Setup Google Identity Services
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleCredentialResponse,
-      scope: "https://www.googleapis.com/auth/drive.appdata"
-    });
-    
+    if (typeof google !== 'undefined') {
+      initializeGoogleSignIn();
+    } else {
+      // Jika library Google belum dimuat, coba lagi setelah beberapa saat
+      const checkGoogleLoaded = setInterval(() => {
+        if (typeof google !== 'undefined') {
+          clearInterval(checkGoogleLoaded);
+          initializeGoogleSignIn();
+        }
+      }, 100);
+    }
+
     if (currentUser && gAccessToken) {
-      // Jika sudah login, tampilkan UI
-      showUserInterface();
-      // Coba sinkronisasi data
-      syncFromDrive();
+      // Jika sudah login, tampilkan info pengguna dan coba refresh token
+      showUserInfo();
+      refreshToken();
     } else {
       // Jika belum login, tampilkan tombol login
       document.getElementById("loginContainer").style.display = "block";
       document.getElementById("contentContainer").style.display = "none";
-      
-      google.accounts.id.renderButton(
-        document.getElementById("googleSignIn"),
-        { theme: "outline", size: "large", text: "continue_with" }
-      );
     }
   };
+
+  function initializeGoogleSignIn() {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse,
+      scope: "https://www.googleapis.com/auth/drive.file"
+    });
+    
+    google.accounts.id.renderButton(
+      document.getElementById("googleSignIn"),
+      { theme: "filled_blue", size: "large", text: "continue_with", width: "300" }
+    );
+  }
+
+  function showUserInfo() {
+    if (currentUser) {
+      document.getElementById("userInfo").style.display = "block";
+      document.getElementById("userName").textContent = currentUser.name;
+      document.getElementById("userEmail").textContent = currentUser.email;
+    }
+  }
 
   function showError(message) {
     const errorBox = document.getElementById("errorBox");
@@ -149,10 +212,17 @@
     currentUser = { name: data.name, email: data.email, picture: data.picture };
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
     
+    // Tampilkan info pengguna
+    showUserInfo();
+    
     // Minta token akses untuk Google Drive
+    requestDriveAccess();
+  }
+
+  function requestDriveAccess() {
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.appdata',
+      scope: 'https://www.googleapis.com/auth/drive.file',
       callback: async (tokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
           gAccessToken = tokenResponse.access_token;
@@ -170,12 +240,54 @@
       },
       error_callback: (error) => {
         console.error("Error getting access token:", error);
-        showError("Gagal mendapatkan akses ke Google Drive. Pastikan Anda memberikan izin yang diperlukan.");
+        if (error.type === 'user_logged_out' || error.type === 'token_failed') {
+          showError("Sesi login telah berakhir. Silakan login kembali.");
+          // Tidak sign out otomatis, biarkan pengguna memutuskan
+        } else if (error.type === 'access_denied') {
+          showError("Izin akses ke Google Drive ditolak. Silakan berikan izin saat diminta.");
+        } else {
+          showError("Gagal mendapatkan akses ke Google Drive. Pastikan Anda memberikan izin yang diperlukan.");
+        }
         document.getElementById("loadingText").style.display = "none";
       }
     });
     
     tokenClient.requestAccessToken();
+  }
+
+  function refreshToken() {
+    if (!currentUser) return;
+    
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: (tokenResponse) => {
+        if (tokenResponse && tokenResponse.access_token) {
+          gAccessToken = tokenResponse.access_token;
+          localStorage.setItem("gAccessToken", gAccessToken);
+          showUserInterface();
+          syncFromDrive();
+        } else {
+          // Token refresh gagal, tetap tampilkan info pengguna
+          showUserInfo();
+          showError("Sesi telah berakhir. Silakan login kembali dengan menekan tombol Login.");
+        }
+      },
+      error_callback: (error) => {
+        console.error("Error refreshing token:", error);
+        showUserInfo();
+        showError("Sesi telah berakhir. Silakan login kembali dengan menekan tombol Login.");
+      }
+    });
+    
+    // Coba refresh token dengan prompt none (silent refresh)
+    try {
+      tokenClient.requestAccessToken({ prompt: '' });
+    } catch (e) {
+      console.error("Silent refresh failed:", e);
+      showUserInfo();
+      showError("Sesi telah berakhir. Silakan login kembali dengan menekan tombol Login.");
+    }
   }
 
   function showUserInterface() {
@@ -211,22 +323,19 @@
     userBookmarks = {};
     
     // Redirect ke halaman logout Google
-    google.accounts.id.disableAutoSelect();
-    google.accounts.id.revoke(localStorage.getItem('currentUser')?.email, () => {
-      console.log('Consent revoked');
-    });
+    if (typeof google !== 'undefined') {
+      google.accounts.id.disableAutoSelect();
+      google.accounts.id.revoke(localStorage.getItem('currentUser')?.email, () => {
+        console.log('Consent revoked');
+      });
+    }
     
     // Tampilkan kembali tombol login
     document.getElementById("loginContainer").style.display = "block";
     document.getElementById("contentContainer").style.display = "none";
+    document.getElementById("userInfo").style.display = "none";
     document.getElementById("profilePic").style.display = "none";
     document.getElementById("hello").textContent = "";
-    
-    // Render ulang tombol login
-    google.accounts.id.renderButton(
-      document.getElementById("googleSignIn"),
-      { theme: "outline", size: "large", text: "continue_with" }
-    );
     
     showSuccess("Anda telah berhasil logout.");
   }
@@ -246,6 +355,9 @@
       
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
+          // Token expired atau tidak valid
+          localStorage.removeItem('gAccessToken');
+          gAccessToken = null;
           throw new Error("AUTHLOST");
         }
         throw new Error(`HTTP error! status: ${res.status}`);
@@ -277,7 +389,10 @@
       // Jika token expired, minta pengguna login ulang
       if (err.message.includes("AUTHLOST") || err.message.includes("401") || err.message.includes("403")) {
         showError("Sesi telah berakhir. Silakan login kembali.");
-        signOut();
+        // Tidak sign out otomatis, biarkan pengguna memutuskan
+        document.getElementById("loginContainer").style.display = "block";
+        document.getElementById("contentContainer").style.display = "none";
+        showUserInfo();
       } else {
         showError("⚠️ Gagal sinkronisasi. Pastikan Anda memiliki koneksi internet dan coba lagi.");
       }
