@@ -51,12 +51,12 @@
   <button id="signOutBtn" onclick="signOut()" style="display:none;">Keluar</button>
 
   <div class="controls">
-  <input id="search" placeholder="Cari judul...">
-  <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
-  <button onclick="clearFilters()">Reset</button>
-  <button onclick="syncFromDrive()">🔄 Sinkron Sekarang</button>
-  <a href="indeks.html" class="btn">← Kembali</a>
-</div>
+    <input id="search" placeholder="Cari judul...">
+    <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
+    <button onclick="clearFilters()">Reset</button>
+    <button onclick="syncFromDrive()">🔄 Sinkron Sekarang</button>
+    <a href="indeks.html" class="btn">← Kembali</a>
+  </div>
 
   <div id="list" class="grid"></div>
   <div id="empty" class="empty" style="display:none">Belum ada bookmark.</div>
@@ -108,36 +108,36 @@
     render();
   }
 
- async function syncFromDrive() {
-  if (!gAccessToken) {
-    alert("Silakan login dengan akun Google terlebih dahulu.");
-    return;
-  }
-  try {
-    let res = await fetch(
-      "https://www.googleapis.com/drive/v3/files?q=name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents",
-      { headers: { Authorization: "Bearer " + gAccessToken }}
-    );
-    let files = await res.json();
-    if (files.files && files.files.length > 0) {
-      let fileId = files.files[0].id;
-      let contentRes = await fetch(
-        "https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media",
+  async function syncFromDrive() {
+    if (!gAccessToken) {
+      alert("Silakan login dengan akun Google terlebih dahulu.");
+      return;
+    }
+    try {
+      let res = await fetch(
+        "https://www.googleapis.com/drive/v3/files?q=name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents",
         { headers: { Authorization: "Bearer " + gAccessToken }}
       );
-      userBookmarks = await contentRes.json();
-      alert("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
-    } else {
-      userBookmarks = {};
-      await saveToDrive();
-      alert("📂 File baru bookmark dibuat di Google Drive.");
+      let files = await res.json();
+      if (files.files && files.files.length > 0) {
+        let fileId = files.files[0].id;
+        let contentRes = await fetch(
+          "https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media",
+          { headers: { Authorization: "Bearer " + gAccessToken }}
+        );
+        userBookmarks = await contentRes.json();
+        alert("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
+      } else {
+        userBookmarks = {};
+        await saveToDrive();
+        alert("📂 File baru bookmark dibuat di Google Drive.");
+      }
+      render();
+    } catch (err) {
+      console.error("Sync error:", err);
+      alert("⚠️ Gagal sinkronisasi. Coba ulangi.");
     }
-    render();
-  } catch (err) {
-    console.error("Sync error:", err);
-    alert("⚠️ Gagal sinkronisasi. Coba ulangi.");
   }
-}
 
   async function saveToDrive() {
     if (!gAccessToken) return;
@@ -166,13 +166,20 @@
     }
   }
 
-  function remove(link) { delete userBookmarks[link]; saveToDrive(); render(); }
+  function remove(link) { 
+    delete userBookmarks[link]; 
+    saveToDrive(); 
+    render(); 
+  }
+  
   function editTags(link) {
     const item = userBookmarks[link];
     const input = prompt("Ubah tag:", (item.tags||[]).join(", "));
     if (input===null) return;
     item.tags = input.split(",").map(t=>t.trim()).filter(Boolean);
-    userBookmarks[link]=item; saveToDrive(); render();
+    userBookmarks[link]=item; 
+    saveToDrive(); 
+    render();
   }
 
   function matchesFilter(item, q, tagStr) {
@@ -191,10 +198,23 @@
     const q = document.getElementById("search").value.trim().toLowerCase();
     const tagStr = document.getElementById("tagFilter").value.trim().toLowerCase();
     const items = Object.values(userBookmarks).filter(it => matchesFilter(it, q, tagStr));
-    if (items.length===0) { empty.style.display="block"; return; }
+    if (items.length===0) { 
+      empty.style.display="block"; 
+      return; 
+    }
     empty.style.display="none";
     items.forEach(it=>{
-      const host = (()=>{ try{return new URL(it.link).hostname.replace(/^www\./,'');}catch(e){return it.link;}})();
+      const host = (()=>{ 
+        try {
+          return new URL(it.link).hostname.replace(/^www\./,'');
+        } catch(e) {
+          return it.link;
+        }
+      })();
+      
+      // Escape single quotes in URL untuk menghindari masalah sintaks JavaScript
+      const escapedLink = it.link.replace(/'/g, "\\'");
+      
       const card=document.createElement("div");
       card.className="card";
       card.innerHTML=`
@@ -204,64 +224,58 @@
           <div class="tags">${(it.tags||[]).map(t=>'<span class="chip">#'+t+'</span>').join('')}</div>
         </div>
         <div class="row">
-          <button onclick="editTags('${it.link.replace("'", "%27")}')">✏️ Edit Tag</button>
-          <button onclick="remove('${it.link.replace("'", "%27")}')">🗑️ Hapus</button>
+          <button onclick="editTags('${escapedLink}')">✏️ Edit Tag</button>
+          <button onclick="remove('${escapedLink}')">🗑️ Hapus</button>
         </div>
       `;
       list.appendChild(card);
     });
   }
 
-  function clearFilters(){ document.getElementById("search").value=""; document.getElementById("tagFilter").value=""; render(); }
+  function clearFilters(){ 
+    document.getElementById("search").value=""; 
+    document.getElementById("tagFilter").value=""; 
+    render(); 
+  }
+  
   document.getElementById("search").addEventListener("input", render);
   document.getElementById("tagFilter").addEventListener("input", render);
 
-  window.onload = function() {
-  try {
-    currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-  } catch (e) {}
-
-  if (currentUser) {
-    // Update UI
-    document.getElementById("profilePic").src = currentUser.picture;
-    document.getElementById("profilePic").style.display = "block";
-    document.getElementById("googleSignIn").style.display = "none";
-    document.getElementById("signOutBtn").style.display = "inline-block";
-    document.getElementById("hello").textContent = "Halo, " + currentUser.name;
-
-    // 🔑 Minta token lagi tiap reload
-    function requestDriveToken() {
-  const tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/drive.appdata',
-    prompt: '', // 🔑 silent login
-    callback: (tokenResponse) => {
-      gAccessToken = tokenResponse.access_token;
-      syncFromDrive();
-    }
-  });
-  tokenClient.requestAccessToken();
-}
-
-window.onload = function() {
-  try {
-    currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-  } catch (e) {}
-
-  if (currentUser) {
-    document.getElementById("profilePic").src = currentUser.picture;
-    document.getElementById("profilePic").style.display = "block";
-    document.getElementById("googleSignIn").style.display = "none";
-    document.getElementById("signOutBtn").style.display = "inline-block";
-    document.getElementById("hello").textContent = "Halo, " + currentUser.name;
-
-    // 🔄 otomatis ambil token Drive
-    requestDriveToken();
+  // 🔑 Minta token lagi tiap reload
+  function requestDriveToken() {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.appdata',
+      prompt: '', // 🔑 silent login
+      callback: (tokenResponse) => {
+        gAccessToken = tokenResponse.access_token;
+        syncFromDrive();
+      }
+    });
+    tokenClient.requestAccessToken();
   }
 
-  render();
-};
+  // Fungsi onload yang benar
+  window.onload = function() {
+    try {
+      currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+    } catch (e) {
+      console.error("Error parsing user data:", e);
+    }
 
+    if (currentUser) {
+      document.getElementById("profilePic").src = currentUser.picture;
+      document.getElementById("profilePic").style.display = "block";
+      document.getElementById("googleSignIn").style.display = "none";
+      document.getElementById("signOutBtn").style.display = "inline-block";
+      document.getElementById("hello").textContent = "Halo, " + currentUser.name;
+
+      // 🔄 otomatis ambil token Drive
+      requestDriveToken();
+    }
+
+    render();
+  };
 </script>
 </body>
-</html>                 
+</html>
