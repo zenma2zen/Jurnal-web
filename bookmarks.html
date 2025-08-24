@@ -6,75 +6,67 @@
   <title>WHARSA - Bookmark Saya</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js"></script>
   <style>
-    :root {
-      --primary-color: #4361ee;
-      --primary-light: #e0e5ff;
-      --bg-color: #f7f8fc;
-      --card-bg: #ffffff;
-      --text: #222;
-      --text-light: #666;
-      --border: 1px solid rgba(0,0,0,.08);
-      --shadow: 0 2px 10px rgba(0,0,0,.05);
-      --radius: 12px;
-    }
-    body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text); margin: 0; padding: 20px; }
-    h1 { color: var(--primary-color); margin: 0 0 6px; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    #profilePic { width: 40px; height: 40px; border-radius: 50%; display: none; }
-    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    input { padding: 10px 12px; border-radius: var(--radius); border: var(--border); font-family: inherit; flex: 1; min-width: 200px; }
-    button, a.btn { padding: 8px 14px; border-radius: var(--radius); border: var(--border); background: #fff; cursor: pointer;
-      font-family: inherit; text-decoration: none; color: var(--text); box-shadow: var(--shadow); transition: 0.2s; }
-    button:hover, a.btn:hover { background: var(--primary-light); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 15px; }
-    .card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
-    .title { font-weight: 600; margin-bottom: 6px; }
-    .title a { color: var(--primary-color); text-decoration: none; }
-    .title a:hover { text-decoration: underline; }
-    .url { font-size: 13px; color: var(--text-light); margin-bottom: 10px; }
-    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .chip { background: var(--primary-light); color: var(--primary-color); padding: 3px 8px; border-radius: 999px; font-size: 12px; }
-    .row { display: flex; gap: 8px; }
-    .empty { padding: 30px; text-align: center; color: var(--text-light); }
+    body { font-family:'Inter',sans-serif; background:#f7f8fc; margin:0; padding:20px; }
+    h1 { color:#4361ee; margin:0 0 6px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    #profilePic { width:40px; height:40px; border-radius:50%; display:none; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+    input { padding:10px 12px; border-radius:8px; border:1px solid #ddd; flex:1; min-width:200px; }
+    button,a.btn { padding:8px 14px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; text-decoration:none; color:#222; }
+    button:hover,a.btn:hover { background:#e0e5ff; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:15px; }
+    .card { background:#fff; padding:16px; border-radius:10px; border:1px solid #eee; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+    .title { font-weight:600; margin-bottom:6px; }
+    .title a { color:#4361ee; text-decoration:none; }
+    .url { font-size:13px; color:#666; margin-bottom:10px; }
+    .tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .chip { background:#e0e5ff; color:#4361ee; padding:3px 8px; border-radius:999px; font-size:12px; }
+    .row { display:flex; gap:8px; }
+    .empty { padding:30px; text-align:center; color:#999; }
   </style>
 </head>
 <body>
   <div class="topbar">
     <div>
       <h1>🔖 Bookmark Saya</h1>
-      <div id="hello" style="color:var(--text-light)"></div>
+      <div id="hello" style="color:#666"></div>
     </div>
     <img id="profilePic" alt="profile">
   </div>
 
-  <!-- Google Login -->
+  <!-- Google Identity -->
   <div id="g_id_onload"
        data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
        data-callback="handleCredentialResponse"
-       data-auto_select="true"
-       data-itp_support="true">
+       data-scope="https://www.googleapis.com/auth/drive.appdata">
   </div>
+  <div id="googleSignIn" class="g_id_signin"
+       data-type="standard"
+       data-shape="pill"
+       data-theme="outline"
+       data-size="medium">
+  </div>
+  <button id="signOutBtn" onclick="signOut()" style="display:none;">Keluar</button>
 
   <div class="controls">
-    <input id="search" placeholder="Cari judul...">
-    <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
-    <button onclick="clearFilters()">Reset</button>
-    <a href="indeks.html" class="btn">← Kembali</a>
-  </div>
+  <input id="search" placeholder="Cari judul...">
+  <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
+  <button onclick="clearFilters()">Reset</button>
+  <button onclick="syncFromDrive()">🔄 Sinkron Sekarang</button>
+  <a href="indeks.html" class="btn">← Kembali</a>
+</div>
 
   <div id="list" class="grid"></div>
   <div id="empty" class="empty" style="display:none">Belum ada bookmark.</div>
 
 <script>
   let currentUser = null;
-  function handleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
-    currentUser = { name: data.name, email: data.email, picture: data.picture };
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    updateUserUI();
-    render();
-  }
+  let userBookmarks = {};
+  let gAccessToken = null;
+  const DRIVE_FILE_NAME = "WHARSA_bookmarks.json";
+  const GOOGLE_CLIENT_ID = "1002562957398-0gu5nmbo2v22lmfqj9lffhn3miat77hu.apps.googleusercontent.com";
 
   function parseJwt(token) {
     let base64Url = token.split('.')[1];
@@ -84,32 +76,103 @@
     return JSON.parse(jsonPayload);
   }
 
-  function KEY() { return "bookmarks_" + (currentUser?.email || "guest"); }
+  function handleCredentialResponse(response) {
+    const data = parseJwt(response.credential);
+    currentUser = { name:data.name, email:data.email, picture:data.picture };
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    document.getElementById("profilePic").src = currentUser.picture;
+    document.getElementById("profilePic").style.display = "block";
+    document.getElementById("googleSignIn").style.display = "none";
+    document.getElementById("signOutBtn").style.display = "inline-block";
+    document.getElementById("hello").textContent = "Halo, " + currentUser.name;
 
-  function updateUserUI(){
-    const hello = document.getElementById("hello");
-    const pic = document.getElementById("profilePic");
-    if (currentUser) {
-      hello.textContent = "Halo, " + (currentUser.name || currentUser.email);
-      if (currentUser.picture){ pic.src = currentUser.picture; pic.style.display="block"; }
+    // minta token Drive
+    google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.appdata',
+      callback: (tokenResponse) => {
+        gAccessToken = tokenResponse.access_token;
+        syncFromDrive();
+      }
+    }).requestAccessToken();
+  }
+
+  function signOut() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    userBookmarks = {};
+    document.getElementById("profilePic").style.display = "none";
+    document.getElementById("googleSignIn").style.display = "block";
+    document.getElementById("signOutBtn").style.display = "none";
+    document.getElementById("hello").textContent = "";
+    render();
+  }
+
+ async function syncFromDrive() {
+  if (!gAccessToken) {
+    alert("Silakan login dengan akun Google terlebih dahulu.");
+    return;
+  }
+  try {
+    let res = await fetch(
+      "https://www.googleapis.com/drive/v3/files?q=name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents",
+      { headers: { Authorization: "Bearer " + gAccessToken }}
+    );
+    let files = await res.json();
+    if (files.files && files.files.length > 0) {
+      let fileId = files.files[0].id;
+      let contentRes = await fetch(
+        "https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media",
+        { headers: { Authorization: "Bearer " + gAccessToken }}
+      );
+      userBookmarks = await contentRes.json();
+      alert("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
     } else {
-      hello.textContent = "Mode tamu (belum login)";
+      userBookmarks = {};
+      await saveToDrive();
+      alert("📂 File baru bookmark dibuat di Google Drive.");
+    }
+    render();
+  } catch (err) {
+    console.error("Sync error:", err);
+    alert("⚠️ Gagal sinkronisasi. Coba ulangi.");
+  }
+}
+
+  async function saveToDrive() {
+    if (!gAccessToken) return;
+    let res = await fetch(
+      "https://www.googleapis.com/drive/v3/files?q=name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents",
+      { headers: { Authorization: "Bearer " + gAccessToken }}
+    );
+    let files = await res.json();
+    if (files.files && files.files.length > 0) {
+      let fileId = files.files[0].id;
+      await fetch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + "?uploadType=media", {
+        method: "PATCH",
+        headers: { Authorization: "Bearer " + gAccessToken, "Content-Type": "application/json" },
+        body: JSON.stringify(userBookmarks)
+      });
+    } else {
+      const metadata = { name: DRIVE_FILE_NAME, parents: ["appDataFolder"] };
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+      form.append("file", new Blob([JSON.stringify(userBookmarks)], { type: "application/json" }));
+      await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + gAccessToken },
+        body: form
+      });
     }
   }
 
-  function load() { return Object.values(JSON.parse(localStorage.getItem(KEY()) || "{}")); }
-  function save(map) { localStorage.setItem(KEY(), JSON.stringify(map)); }
-  function remove(link) {
-    const map = JSON.parse(localStorage.getItem(KEY()) || "{}");
-    delete map[link]; save(map); render();
-  }
+  function remove(link) { delete userBookmarks[link]; saveToDrive(); render(); }
   function editTags(link) {
-    const map = JSON.parse(localStorage.getItem(KEY()) || "{}");
-    const item = map[link];
-    const input = prompt("Ubah tag (pisahkan koma):", (item.tags||[]).join(", "));
+    const item = userBookmarks[link];
+    const input = prompt("Ubah tag:", (item.tags||[]).join(", "));
     if (input===null) return;
     item.tags = input.split(",").map(t=>t.trim()).filter(Boolean);
-    map[link] = item; save(map); render();
+    userBookmarks[link]=item; saveToDrive(); render();
   }
 
   function matchesFilter(item, q, tagStr) {
@@ -127,15 +190,14 @@
     list.innerHTML = "";
     const q = document.getElementById("search").value.trim().toLowerCase();
     const tagStr = document.getElementById("tagFilter").value.trim().toLowerCase();
-    const items = load().filter(it => matchesFilter(it, q, tagStr));
-    if (items.length === 0) { empty.style.display = "block"; return; }
-    else empty.style.display = "none";
-
-    items.forEach(it => {
-      const host = (() => { try { return new URL(it.link).hostname.replace(/^www\\./,''); } catch(e){ return it.link; }})();
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
+    const items = Object.values(userBookmarks).filter(it => matchesFilter(it, q, tagStr));
+    if (items.length===0) { empty.style.display="block"; return; }
+    empty.style.display="none";
+    items.forEach(it=>{
+      const host = (()=>{ try{return new URL(it.link).hostname.replace(/^www\./,'');}catch(e){return it.link;}})();
+      const card=document.createElement("div");
+      card.className="card";
+      card.innerHTML=`
         <div>
           <div class="title"><a href="${it.link}" target="_blank">${it.title}</a></div>
           <div class="url">${host}</div>
@@ -150,19 +212,21 @@
     });
   }
 
-  function clearFilters(){
-    document.getElementById("search").value="";
-    document.getElementById("tagFilter").value="";
-    render();
-  }
-
+  function clearFilters(){ document.getElementById("search").value=""; document.getElementById("tagFilter").value=""; render(); }
   document.getElementById("search").addEventListener("input", render);
   document.getElementById("tagFilter").addEventListener("input", render);
 
-  // initial
-  try { currentUser = JSON.parse(localStorage.getItem("currentUser") || "null"); } catch(e){}
-  updateUserUI();
-  render();
+  window.onload=function(){
+    try{ currentUser=JSON.parse(localStorage.getItem("currentUser")||"null"); }catch(e){}
+    if(currentUser){
+      document.getElementById("profilePic").src=currentUser.picture;
+      document.getElementById("profilePic").style.display="block";
+      document.getElementById("googleSignIn").style.display="none";
+      document.getElementById("signOutBtn").style.display="inline-block";
+      document.getElementById("hello").textContent="Halo, "+currentUser.name;
+    }
+    render();
+  };
 </script>
 </body>
 </html>
