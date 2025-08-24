@@ -25,6 +25,8 @@
     .chip { background:#e0e5ff; color:#4361ee; padding:3px 8px; border-radius:999px; font-size:12px; }
     .row { display:flex; gap:8px; }
     .empty { padding:30px; text-align:center; color:#999; }
+    #loginContainer { text-align: center; margin: 30px 0; }
+    .loading { color: #666; font-style: italic; }
   </style>
 </head>
 <body>
@@ -36,30 +38,25 @@
     <img id="profilePic" alt="profile">
   </div>
 
-  <!-- Google Identity -->
-  <div id="g_id_onload"
-       data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-       data-callback="handleCredentialResponse"
-       data-scope="https://www.googleapis.com/auth/drive.appdata">
-  </div>
-  <div id="googleSignIn" class="g_id_signin"
-       data-type="standard"
-       data-shape="pill"
-       data-theme="outline"
-       data-size="medium">
-  </div>
-  <button id="signOutBtn" onclick="signOut()" style="display:none;">Keluar</button>
-
-  <div class="controls">
-    <input id="search" placeholder="Cari judul...">
-    <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
-    <button onclick="clearFilters()">Reset</button>
-    <button onclick="syncFromDrive()">🔄 Sinkron Sekarang</button>
-    <a href="indeks.html" class="btn">← Kembali</a>
+  <!-- Konten hanya ditampilkan jika sudah login -->
+  <div id="loginContainer">
+    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline" data-size="large"></div>
+    <p class="loading" id="loadingText" style="display: none;">Memuat data...</p>
   </div>
 
-  <div id="list" class="grid"></div>
-  <div id="empty" class="empty" style="display:none">Belum ada bookmark.</div>
+  <div id="contentContainer" style="display: none;">
+    <div class="controls">
+      <input id="search" placeholder="Cari judul...">
+      <input id="tagFilter" placeholder="Filter tag (pisahkan koma)">
+      <button onclick="clearFilters()">Reset</button>
+      <button onclick="syncFromDrive()">🔄 Sinkron Sekarang</button>
+      <a href="indeks.html" class="btn">← Kembali</a>
+      <button id="signOutBtn" onclick="signOut()">Keluar</button>
+    </div>
+
+    <div id="list" class="grid"></div>
+    <div id="empty" class="empty" style="display:none">Belum ada bookmark.</div>
+  </div>
 
 <script>
   let currentUser = null;
@@ -68,44 +65,117 @@
   const DRIVE_FILE_NAME = "WHARSA_bookmarks.json";
   const GOOGLE_CLIENT_ID = "1002562957398-0gu5nmbo2v22lmfqj9lffhn3miat77hu.apps.googleusercontent.com";
 
-  function parseJwt(token) {
-    let base64Url = token.split('.')[1];
-    let base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
-    let jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
-      '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-    return JSON.parse(jsonPayload);
-  }
+  // Inisialisasi Google Sign In
+  window.onload = function() {
+    // Cek apakah pengguna sudah login sebelumnya
+    try {
+      currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+      gAccessToken = localStorage.getItem("gAccessToken");
+    } catch (e) {
+      console.error("Error parsing stored data:", e);
+    }
+
+    if (currentUser && gAccessToken) {
+      // Jika sudah login, tampilkan UI
+      showUserInterface();
+      // Coba sinkronisasi data
+      syncFromDrive();
+    } else {
+      // Jika belum login, tampilkan tombol login
+      document.getElementById("loginContainer").style.display = "block";
+      document.getElementById("contentContainer").style.display = "none";
+    }
+
+    // Setup Google Identity Services
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse,
+      scope: "https://www.googleapis.com/auth/drive.appdata"
+    });
+    
+    google.accounts.id.renderButton(
+      document.querySelector(".g_id_signin"),
+      { theme: "outline", size: "large" }
+    );
+  };
 
   function handleCredentialResponse(response) {
+    document.getElementById("loadingText").style.display = "block";
+    
     const data = parseJwt(response.credential);
-    currentUser = { name:data.name, email:data.email, picture:data.picture };
+    currentUser = { name: data.name, email: data.email, picture: data.picture };
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    document.getElementById("profilePic").src = currentUser.picture;
-    document.getElementById("profilePic").style.display = "block";
-    document.getElementById("googleSignIn").style.display = "none";
-    document.getElementById("signOutBtn").style.display = "inline-block";
-    document.getElementById("hello").textContent = "Halo, " + currentUser.name;
-
-    // minta token Drive
-    google.accounts.oauth2.initTokenClient({
+    
+    // Minta token akses untuk Google Drive
+    const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: 'https://www.googleapis.com/auth/drive.appdata',
-      callback: (tokenResponse) => {
+      callback: async (tokenResponse) => {
         gAccessToken = tokenResponse.access_token;
-        syncFromDrive();
+        localStorage.setItem("gAccessToken", gAccessToken);
+        
+        // Tampilkan UI pengguna
+        showUserInterface();
+        
+        // Sinkronisasi data dari Drive
+        await syncFromDrive();
+        document.getElementById("loadingText").style.display = "none";
+      },
+      error_callback: (error) => {
+        console.error("Error getting access token:", error);
+        alert("Gagal mendapatkan akses ke Google Drive. Silakan coba lagi.");
+        document.getElementById("loadingText").style.display = "none";
       }
-    }).requestAccessToken();
+    });
+    
+    tokenClient.requestAccessToken();
+  }
+
+  function showUserInterface() {
+    document.getElementById("loginContainer").style.display = "none";
+    document.getElementById("contentContainer").style.display = "block";
+    document.getElementById("profilePic").src = currentUser.picture;
+    document.getElementById("profilePic").style.display = "block";
+    document.getElementById("hello").textContent = "Halo, " + currentUser.name;
+  }
+
+  function parseJwt(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("Error parsing JWT:", e);
+      return {};
+    }
   }
 
   function signOut() {
-    currentUser = null;
+    // Hapus data dari localStorage
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('gAccessToken');
+    
+    // Reset state aplikasi
+    currentUser = null;
+    gAccessToken = null;
     userBookmarks = {};
+    
+    // Redirect ke halaman logout Google
+    google.accounts.id.disableAutoSelect();
+    
+    // Tampilkan kembali tombol login
+    document.getElementById("loginContainer").style.display = "block";
+    document.getElementById("contentContainer").style.display = "none";
     document.getElementById("profilePic").style.display = "none";
-    document.getElementById("googleSignIn").style.display = "block";
-    document.getElementById("signOutBtn").style.display = "none";
     document.getElementById("hello").textContent = "";
-    render();
+    
+    // Render ulang tombol login
+    google.accounts.id.renderButton(
+      document.querySelector(".g_id_signin"),
+      { theme: "outline", size: "large" }
+    );
   }
 
   async function syncFromDrive() {
@@ -113,56 +183,94 @@
       alert("Silakan login dengan akun Google terlebih dahulu.");
       return;
     }
+    
     try {
+      // Cari file bookmark di Google Drive
       let res = await fetch(
-        "https://www.googleapis.com/drive/v3/files?q=name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents",
+        `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and 'appDataFolder' in parents`,
         { headers: { Authorization: "Bearer " + gAccessToken }}
       );
+      
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      
       let files = await res.json();
       if (files.files && files.files.length > 0) {
+        // File ditemukan, ambil kontennya
         let fileId = files.files[0].id;
         let contentRes = await fetch(
-          "https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media",
+          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
           { headers: { Authorization: "Bearer " + gAccessToken }}
         );
+        
+        if (!contentRes.ok) throw new Error(`HTTP error! status: ${contentRes.status}`);
+        
         userBookmarks = await contentRes.json();
-        alert("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
+        console.log("✅ Sinkronisasi berhasil diperbarui dari Google Drive.");
       } else {
+        // File tidak ditemukan, buat file baru
         userBookmarks = {};
         await saveToDrive();
-        alert("📂 File baru bookmark dibuat di Google Drive.");
+        console.log("📂 File baru bookmark dibuat di Google Drive.");
       }
       render();
     } catch (err) {
       console.error("Sync error:", err);
-      alert("⚠️ Gagal sinkronisasi. Coba ulangi.");
+      
+      // Jika token expired, minta pengguna login ulang
+      if (err.message.includes("401") || err.message.includes("403")) {
+        alert("Sesi telah berakhir. Silakan login kembali.");
+        signOut();
+      } else {
+        alert("⚠️ Gagal sinkronisasi. Coba ulangi.");
+      }
     }
   }
 
   async function saveToDrive() {
     if (!gAccessToken) return;
-    let res = await fetch(
-      "https://www.googleapis.com/drive/v3/files?q=name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents",
-      { headers: { Authorization: "Bearer " + gAccessToken }}
-    );
-    let files = await res.json();
-    if (files.files && files.files.length > 0) {
-      let fileId = files.files[0].id;
-      await fetch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + "?uploadType=media", {
-        method: "PATCH",
-        headers: { Authorization: "Bearer " + gAccessToken, "Content-Type": "application/json" },
-        body: JSON.stringify(userBookmarks)
-      });
-    } else {
-      const metadata = { name: DRIVE_FILE_NAME, parents: ["appDataFolder"] };
-      const form = new FormData();
-      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-      form.append("file", new Blob([JSON.stringify(userBookmarks)], { type: "application/json" }));
-      await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + gAccessToken },
-        body: form
-      });
+    
+    try {
+      // Cek apakah file sudah ada
+      let res = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and 'appDataFolder' in parents`,
+        { headers: { Authorization: "Bearer " + gAccessToken }}
+      );
+      
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      
+      let files = await res.json();
+      if (files.files && files.files.length > 0) {
+        // Update file yang sudah ada
+        let fileId = files.files[0].id;
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+          method: "PATCH",
+          headers: { 
+            Authorization: "Bearer " + gAccessToken, 
+            "Content-Type": "application/json" 
+          },
+          body: JSON.stringify(userBookmarks)
+        });
+      } else {
+        // Buat file baru
+        const metadata = { 
+          name: DRIVE_FILE_NAME, 
+          parents: ["appDataFolder"],
+          mimeType: "application/json"
+        };
+        
+        const form = new FormData();
+        form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+        form.append("file", new Blob([JSON.stringify(userBookmarks)], { type: "application/json" }));
+        
+        await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + gAccessToken },
+          body: form
+        });
+      }
+    } catch (err) {
+      console.error("Error saving to Drive:", err);
+      throw err;
     }
   }
 
@@ -175,19 +283,20 @@
   function editTags(link) {
     const item = userBookmarks[link];
     const input = prompt("Ubah tag:", (item.tags||[]).join(", "));
-    if (input===null) return;
-    item.tags = input.split(",").map(t=>t.trim()).filter(Boolean);
-    userBookmarks[link]=item; 
+    if (input === null) return;
+    item.tags = input.split(",").map(t => t.trim()).filter(Boolean);
+    userBookmarks[link] = item; 
     saveToDrive(); 
     render();
   }
 
   function matchesFilter(item, q, tagStr) {
-    const okTitle = !q || (item.title||"").toLowerCase().includes(q);
+    const okTitle = !q || (item.title || "").toLowerCase().includes(q);
     if (!okTitle) return false;
     if (!tagStr) return true;
-    const need = tagStr.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
-    const have = (item.tags||[]).map(t=>t.toLowerCase());
+    
+    const need = tagStr.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+    const have = (item.tags || []).map(t => t.toLowerCase());
     return need.every(t => have.includes(t));
   }
 
@@ -195,18 +304,21 @@
     const list = document.getElementById("list");
     const empty = document.getElementById("empty");
     list.innerHTML = "";
+    
     const q = document.getElementById("search").value.trim().toLowerCase();
     const tagStr = document.getElementById("tagFilter").value.trim().toLowerCase();
     const items = Object.values(userBookmarks).filter(it => matchesFilter(it, q, tagStr));
-    if (items.length===0) { 
-      empty.style.display="block"; 
+    
+    if (items.length === 0) { 
+      empty.style.display = "block"; 
       return; 
     }
-    empty.style.display="none";
-    items.forEach(it=>{
-      const host = (()=>{ 
+    
+    empty.style.display = "none";
+    items.forEach(it => {
+      const host = (() => { 
         try {
-          return new URL(it.link).hostname.replace(/^www\./,'');
+          return new URL(it.link).hostname.replace(/^www\./, '');
         } catch(e) {
           return it.link;
         }
@@ -215,13 +327,13 @@
       // Escape single quotes in URL untuk menghindari masalah sintaks JavaScript
       const escapedLink = it.link.replace(/'/g, "\\'");
       
-      const card=document.createElement("div");
-      card.className="card";
-      card.innerHTML=`
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
         <div>
-          <div class="title"><a href="${it.link}" target="_blank">${it.title}</a></div>
+          <div class="title"><a href="${it.link}" target="_blank">${it.title || 'Tanpa judul'}</a></div>
           <div class="url">${host}</div>
-          <div class="tags">${(it.tags||[]).map(t=>'<span class="chip">#'+t+'</span>').join('')}</div>
+          <div class="tags">${(it.tags || []).map(t => '<span class="chip">#' + t + '</span>').join('')}</div>
         </div>
         <div class="row">
           <button onclick="editTags('${escapedLink}')">✏️ Edit Tag</button>
@@ -232,50 +344,15 @@
     });
   }
 
-  function clearFilters(){ 
-    document.getElementById("search").value=""; 
-    document.getElementById("tagFilter").value=""; 
+  function clearFilters() { 
+    document.getElementById("search").value = ""; 
+    document.getElementById("tagFilter").value = ""; 
     render(); 
   }
   
+  // Setup event listeners untuk pencarian
   document.getElementById("search").addEventListener("input", render);
   document.getElementById("tagFilter").addEventListener("input", render);
-
-  // 🔑 Minta token lagi tiap reload
-  function requestDriveToken() {
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.appdata',
-      prompt: '', // 🔑 silent login
-      callback: (tokenResponse) => {
-        gAccessToken = tokenResponse.access_token;
-        syncFromDrive();
-      }
-    });
-    tokenClient.requestAccessToken();
-  }
-
-  // Fungsi onload yang benar
-  window.onload = function() {
-    try {
-      currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-    } catch (e) {
-      console.error("Error parsing user data:", e);
-    }
-
-    if (currentUser) {
-      document.getElementById("profilePic").src = currentUser.picture;
-      document.getElementById("profilePic").style.display = "block";
-      document.getElementById("googleSignIn").style.display = "none";
-      document.getElementById("signOutBtn").style.display = "inline-block";
-      document.getElementById("hello").textContent = "Halo, " + currentUser.name;
-
-      // 🔄 otomatis ambil token Drive
-      requestDriveToken();
-    }
-
-    render();
-  };
 </script>
 </body>
 </html>
