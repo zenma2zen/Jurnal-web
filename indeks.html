@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WHARSA - Wahasa Academic Reference Search Assistant</title>
+  <title>WHARSA - Academic Reference Search</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
@@ -23,13 +23,25 @@
 
     // Fungsi untuk memeriksa dan memulihkan status login
     function checkLoginStatus() {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        updateUIAfterAuth();
-        loadBookmarks();
-      }
-    }
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+
+    // Update UI ke kondisi login
+    document.getElementById("profilePic").src = currentUser.picture;
+    document.getElementById("profilePic").style.display = "block";
+    document.getElementById("googleSignIn").style.display = "none";
+    document.getElementById("signOutBtn").style.display = "inline-block";
+
+    updateUIAfterAuth();
+    loadBookmarks();
+  } else {
+    // Kalau belum login
+    document.getElementById("profilePic").style.display = "none";
+    document.getElementById("googleSignIn").style.display = "block";
+    document.getElementById("signOutBtn").style.display = "none";
+  }
+}
 
     // Fungsi untuk memuat bookmark
     function loadBookmarks() {
@@ -491,21 +503,19 @@ function signOut() {
         document.getElementById("newsContainer").style.display = "block";
       }
     }
+   window.onload = function() {
+  checkLoginStatus(); // cek status login saat reload
 
-    window.onload = function() {
-      // Periksa status login terlebih dahulu
-      checkLoginStatus();
-      
-      fetchLatestNews();
-      generateYearOptions();
-      
-      if (localStorage.getItem("darkMode") === "true") {
-        document.body.classList.add("dark-mode");
-        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
-      }
-      
-      document.getElementById("searchInput").focus();
-    };
+  fetchLatestNews();
+  generateYearOptions();
+
+  if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark-mode");
+    document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
+  }
+
+  document.getElementById("searchInput").focus();
+};
   </script>
   <style>
     :root {
@@ -1453,4 +1463,3 @@ function signOut() {
   <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
 </body>
 </html>
-
