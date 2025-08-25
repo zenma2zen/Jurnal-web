@@ -6,721 +6,110 @@
   <title>WHARSA - Academic Reference Search</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  
-  <!-- Firebase App (wajib) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <!-- Firebase Firestore -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <!-- Firebase Auth -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  
-  <script>
-    // Konfigurasi Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",
-      authDomain: "wharsa-20c0d.firebaseapp.com",
-      projectId: "wharsa-20c0d",
-      storageBucket: "wharsa-20c0d.firebasestorage.app",
-      messagingSenderId: "481228042342",
-      appId: "1:481228042342:web:2d70caec67ad790161fda7",
-      measurementId: "G-CLSFRMMRMQ"
-    };
-
-    // Inisialisasi Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    
-    const API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
-    const CX = "332c680f2381f4787";
-    const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
-    const GOOGLE_CLIENT_ID = "1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com";
-
-    let currentPage = 1;
-    let lastQuery = "";
-    let totalResults = 0;
-    let selectedYearStart = "";
-    let selectedYearEnd = "";
-    let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
-    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
-    let userBookmarks = {};
-
-    // Fungsi untuk memeriksa dan memulihkan status login
-    function checkLoginStatus() {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById("profilePic").src = currentUser.picture;
-        document.getElementById("profilePic").style.display = "block";
-        document.getElementById("googleSignIn").style.display = "none";
-        document.getElementById("signOutBtn").style.display = "inline-block";
-        updateUIAfterAuth();
-        loadBookmarks();
-      } else {
-        document.getElementById("profilePic").style.display = "none";
-        document.getElementById("googleSignIn").style.display = "block";
-        document.getElementById("signOutBtn").style.display = "none";
-      }
-    }
-
-    // Fungsi untuk memuat bookmark dari Firestore
-    async function loadBookmarks() {
-      if (!currentUser) return;
-      
-      try {
-        const bookmarksRef = db.collection('bookmarks').where('userId', '==', currentUser.email);
-        const snapshot = await bookmarksRef.get();
-        
-        userBookmarks = {};
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          userBookmarks[data.link] = {
-            ...data,
-            id: doc.id
-          };
-        });
-        
-        updateUIAfterAuth();
-      } catch (error) {
-        console.error("Error loading bookmarks:", error);
-      }
-    }
-
-    // Handle Google Sign-In
-    async function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      currentUser = {
-        name: data.name,
-        email: data.email,
-        picture: data.picture
-      };
-
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-
-      // Update UI
-      document.getElementById("profilePic").src = currentUser.picture;
-      document.getElementById("profilePic").style.display = "block";
-      document.getElementById("googleSignIn").style.display = "none";
-      document.getElementById("signOutBtn").style.display = "inline-block";
-
-      await loadBookmarks();
-      updateUIAfterAuth();
-    }
-
-    function parseJwt(token) {
-      let base64Url = token.split('.')[1];
-      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    }
-
-    function signOut() {
-      currentUser = null;
-      localStorage.removeItem('currentUser');
-      document.getElementById("profilePic").style.display = "none";
-      document.getElementById("googleSignIn").style.display = "block";
-      document.getElementById("signOutBtn").style.display = "none";
-      userBookmarks = {};
-      updateUIAfterAuth();
-    }
-
-    // Fungsi untuk menyimpan bookmark ke Firestore
-    async function toggleBookmark(link, title) {
-      if (!currentUser) {
-        alert("Silakan login dengan akun Google untuk menambahkan bookmark.");
-        return;
-      }
-      
-      try {
-        // Escape karakter khusus dalam title untuk digunakan dalam prompt
-        const safeTitle = title.replace(/\\'/g, "'");
-        
-        if (userBookmarks[link]) {
-          // Hapus bookmark
-          await db.collection('bookmarks').doc(userBookmarks[link].id).delete();
-          delete userBookmarks[link];
-        } else {
-          // Tambah bookmark baru
-          const tags = prompt("Tambahkan tag untuk bookmark ini (pisahkan dengan koma):", "");
-          if (tags === null) return; // User membatalkan
-          
-          const bookmarkData = {
-            userId: currentUser.email,
-            title: safeTitle,
-            link: link,
-            tags: tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [],
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          };
-          
-          const docRef = await db.collection('bookmarks').add(bookmarkData);
-          userBookmarks[link] = {...bookmarkData, id: docRef.id};
-        }
-        
-        // Refresh tampilan hasil pencarian untuk memperbarui status bookmark
-        if (lastQuery) {
-          searchJournals(lastQuery, currentPage);
-        }
-      } catch (error) {
-        console.error("Error toggling bookmark:", error);
-        alert("Terjadi kesalahan saat menyimpan bookmark.");
-      }
-    }
-
-    function updateUIAfterAuth() {
-      // Update tampilan tombol bookmark di hasil pencarian
-      const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
-      bookmarkButtons.forEach(btn => {
-        const link = btn.getAttribute('data-link');
-        if (userBookmarks[link]) {
-          btn.innerHTML = '★';
-          btn.classList.add('bookmarked');
-        } else {
-          btn.innerHTML = '☆';
-          btn.classList.remove('bookmarked');
-        }
-      });
-    }
-
-    async function fetchLatestNews() {
-      try {
-        let response = await fetch(NEWS_URL);
-        let data = await response.json();
-        let newsContainer = document.getElementById("newsContainer");
-        newsContainer.innerHTML = `
-          <div class="section-header">
-            <h3>🌍 Berita Internasional Terkini</h3>
-          </div>
-          <div class="news-grid" id="newsGrid"></div>
-        `;
-
-        let newsGrid = document.getElementById("newsGrid");
-        
-        if (data.data && data.data.length > 0) {
-          data.data.slice(0, 6).forEach(article => {
-            let newsItem = document.createElement("div");
-            newsItem.classList.add("news-card");
-            newsItem.innerHTML = `
-              ${article.image ? `<img src="${article.image.small}" alt="${article.title}" class="news-image">` : ''}
-              <div class="news-content">
-                <h4><a href="${article.link}" target="_blank">${article.title}</a></h4>
-                <p class="news-snippet">${article.contentSnippet || "Deskripsi tidak tersedia"}</p>
-                <p class="news-date">${article.isoDate ? new Date(article.isoDate).toLocaleDateString('id-ID') : ''}</p>
-              </div>
-            `;
-            newsGrid.appendChild(newsItem);
-          });
-        } else {
-          newsContainer.innerHTML += "<p class='no-data'>Tidak ada berita terbaru yang ditemukan.</p>";
-        }
-      } catch (error) {
-        console.error("Error fetching news:", error);
-        document.getElementById("newsContainer").innerHTML += "<p class='error-msg'>Gagal memuat berita. Silakan coba lagi.</p>";
-      }
-    }
-
-    function searchJournals(query, page = 1) {
-      if (!query.trim()) {
-        document.getElementById("searchResults").innerHTML = "<p class='no-data'>Masukkan kata kunci pencarian</p>";
-        return;
-      }
-      
-      lastQuery = query;
-      currentPage = page;
-      const startIndex = (page - 1) * 10 + 1;
-      
-      // Tambahkan filter rentang tahun jika dipilih
-      let searchQuery = query;
-      if (selectedYearStart && selectedYearEnd) {
-        searchQuery += ` after:${selectedYearStart}-01-01 before:${selectedYearEnd}-12-31`;
-      } else if (selectedYearStart) {
-        searchQuery += ` after:${selectedYearStart}-01-01`;
-      } else if (selectedYearEnd) {
-        searchQuery += ` before:${selectedYearEnd}-12-31`;
-      }
-      
-      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(searchQuery)}&cx=${CX}&key=${API_KEY}&start=${startIndex}`;
-
-      document.getElementById("searchResults").innerHTML = `
-        <div class="loading-spinner">
-          <div class="spinner"></div>
-          <p>Mencari jurnal...</p>
-        </div>
-      `;
-
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          totalResults = data.searchInformation?.totalResults || 0;
-          displayResults(data);
-          addToSearchHistory(query);
-        })
-        .catch(error => {
-          console.error("Error fetching search results:", error);
-          document.getElementById("searchResults").innerHTML = `
-            <p class='error-msg'>Gagal memuat hasil pencarian. Silakan coba lagi.</p>
-          `;
-        });
-    }
-
-    function displayResults(data) {
-      let resultsContainer = document.getElementById("searchResults");
-      resultsContainer.innerHTML = "";
-
-      if (data.items && data.items.length > 0) {
-        let yearFilterInfo = "";
-        if (selectedYearStart && selectedYearEnd) {
-          yearFilterInfo = `<span class="year-filter-info">(Filter tahun: ${selectedYearStart} - ${selectedYearEnd})</span>`;
-        } else if (selectedYearStart) {
-          yearFilterInfo = `<span class="year-filter-info">(Filter tahun: ≥ ${selectedYearStart})</span>`;
-        } else if (selectedYearEnd) {
-          yearFilterInfo = `<span class="year-filter-info">(Filter tahun: ≤ ${selectedYearEnd})</span>`;
-        }
-        
-        resultsContainer.innerHTML = `
-          <div class="results-header">
-            <div>
-              <h3>Hasil Pencarian untuk "${lastQuery}"</h3>
-              ${yearFilterInfo}
-            </div>
-            <p class="results-count">${totalResults} hasil ditemukan</p>
-          </div>
-          <div class="results-grid" id="resultsGrid"></div>
-        `;
-
-        let resultsGrid = document.getElementById("resultsGrid");
-        
-        data.items.forEach(item => {
-          let resultItem = document.createElement("div");
-          resultItem.classList.add("result-card");
-          
-          const isBookmarked = userBookmarks[item.link] ? true : false;
-          
-          // Escape karakter khusus dalam title
-          const escapedTitle = item.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
-          
-          resultItem.innerHTML = `
-            <div class="result-content">
-              <div class="result-header">
-                <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-                <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
-                        data-link="${item.link}"
-                        onclick="toggleBookmark('${item.link}', '${escapedTitle}')">
-                  ${isBookmarked ? '★' : '☆'}
-                </button>
-              </div>
-              <p class="result-url">${new URL(item.link).hostname.replace('www.', '')}</p>
-              <p class="result-snippet">${item.snippet}</p>
-              <div class="result-meta">
-                ${extractYearFromResult(item.snippet) ? `<span class="result-year">${extractYearFromResult(item.snippet)}</span>` : ''}
-              </div>
-            </div>
-          `;
-          resultsGrid.appendChild(resultItem);
-        });
-
-        displayPagination();
-      } else {
-        let noResultsMessage = "";
-        if (selectedYearStart && selectedYearEnd) {
-          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" pada rentang tahun ${selectedYearStart}-${selectedYearEnd}</p>`;
-        } else if (selectedYearStart) {
-          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" setelah tahun ${selectedYearStart}</p>`;
-        } else if (selectedYearEnd) {
-          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}" sebelum tahun ${selectedYearEnd}</p>`;
-        } else {
-          noResultsMessage = `<p>Tidak ada hasil ditemukan untuk "${lastQuery}"</p>`;
-        }
-        
-        resultsContainer.innerHTML = `
-          <div class="no-results">
-            <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" alt="No results" width="100">
-            <h3>Tidak ada hasil ditemukan</h3>
-            ${noResultsMessage}
-            <p>Coba gunakan kata kunci yang berbeda atau sesuaikan filter tahun</p>
-          </div>
-        `;
-      }
-    }
-
-    function extractYearFromResult(snippet) {
-      const yearMatch = snippet.match(/(19|20)\d{2}/);
-      return yearMatch ? yearMatch[0] : null;
-    }
-
-    function performSearch() {
-      let query = document.getElementById("searchInput").value.trim();
-      if (query) {
-        currentPage = 1;
-        searchJournals(query, currentPage);
-      }
-    }
-
-    function displayPagination() {
-      const totalPages = Math.min(Math.ceil(totalResults / 10), 10);
-      if (totalPages <= 1) return;
-
-      const paginationContainer = document.createElement("div");
-      paginationContainer.classList.add("pagination");
-
-      if (currentPage > 1) {
-        let prevLink = document.createElement("a");
-        prevLink.href = "#";
-        prevLink.innerHTML = "&laquo;";
-        prevLink.onclick = function() {
-          searchJournals(lastQuery, currentPage - 1);
-          return false;
-        };
-        paginationContainer.appendChild(prevLink);
-      }
-
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, currentPage + 2);
-
-      for (let i = startPage; i <= endPage; i++) {
-        let pageLink = document.createElement("a");
-        pageLink.textContent = i;
-        pageLink.href = "#";
-        if (i === currentPage) pageLink.classList.add("active");
-
-        pageLink.onclick = function() {
-          searchJournals(lastQuery, i);
-          return false;
-        };
-
-        paginationContainer.appendChild(pageLink);
-      }
-
-      if (currentPage < totalPages) {
-        let nextLink = document.createElement("a");
-        nextLink.href = "#";
-        nextLink.innerHTML = "&raquo;";
-        nextLink.onclick = function() {
-          searchJournals(lastQuery, currentPage + 1);
-          return false;
-        };
-        paginationContainer.appendChild(nextLink);
-      }
-
-      document.getElementById("searchResults").appendChild(paginationContainer);
-    }
-
-    function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
-      const isDarkMode = document.body.classList.contains("dark-mode");
-      localStorage.setItem("darkMode", isDarkMode);
-      document.getElementById("darkModeBtn").innerHTML = isDarkMode ? "☀️ Mode Terang" : "🌙 Mode Gelap";
-    }
-
-    function handleKeyPress(event) {
-      if (event.key === "Enter") {
-        performSearch();
-      }
-    }
-
-    function handleYearFilter() {
-      selectedYearStart = document.getElementById("yearStart").value;
-      selectedYearEnd = document.getElementById("yearEnd").value;
-      if (lastQuery) {
-        currentPage = 1;
-        searchJournals(lastQuery, currentPage);
-      }
-    }
-
-    function generateYearOptions() {
-      const yearStartSelect = document.getElementById("yearStart");
-      const yearEndSelect = document.getElementById("yearEnd");
-      const currentYear = new Date().getFullYear();
-      
-      // Tambahkan opsi default
-      const defaultOption = document.createElement("option");
-      defaultOption.value = "";
-      defaultOption.textContent = "Tahun Awal";
-      yearStartSelect.appendChild(defaultOption);
-      
-      const defaultOptionEnd = document.createElement("option");
-      defaultOptionEnd.value = "";
-      defaultOptionEnd.textContent = "Tahun Akhir";
-      yearEndSelect.appendChild(defaultOptionEnd);
-      
-      // Tambahkan opsi tahun dari 2000 hingga sekarang
-      for (let year = currentYear; year >= 2000; year--) {
-        const option = document.createElement("option");
-        option.value = year;
-        option.textContent = year;
-        yearStartSelect.appendChild(option.cloneNode(true));
-        yearEndSelect.appendChild(option.cloneNode(true));
-      }
-    }
-
-    function addToSearchHistory(query) {
-      const existingIndex = searchHistory.findIndex(item => item.query === query);
-      
-      if (existingIndex !== -1) {
-        searchHistory[existingIndex].timestamp = new Date().toISOString();
-      } else {
-        searchHistory.unshift({
-          query: query,
-          timestamp: new Date().toISOString()
-        });
-        
-        if (searchHistory.length > 10) {
-          searchHistory = searchHistory.slice(0, 10);
-        }
-      }
-      
-      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-      displaySearchHistory();
-    }
-
-    function displaySearchHistory() {
-      const historyContainer = document.getElementById("historyContainer");
-      if (!historyContainer) return;
-      
-      if (searchHistory.length === 0) {
-        historyContainer.innerHTML = '<p class="no-history">Belum ada riwayat pencarian</p>';
-        return;
-      }
-      
-      let html = '<div class="history-list">';
-      
-      searchHistory.forEach((item, index) => {
-        const date = new Date(item.timestamp);
-        const formattedDate = date.toLocaleString('id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        html += `
-          <div class="history-item">
-            <div class="history-query" onclick="searchFromHistory('${item.query.replace(/'/g, "\\'")}')">
-              ${index + 1}. ${item.query}
-            </div>
-            <div class="history-date">${formattedDate}</div>
-            <button class="history-delete" onclick="deleteHistoryItem(${index})">×</button>
-          </div>
-        `;
-      });
-      
-      html += '</div>';
-      historyContainer.innerHTML = html;
-    }
-
-    function searchFromHistory(query) {
-      document.getElementById("searchInput").value = query;
-      searchJournals(query);
-    }
-
-    function deleteHistoryItem(index) {
-      searchHistory.splice(index, 1);
-      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-      displaySearchHistory();
-    }
-
-    function clearSearchHistory() {
-      searchHistory = [];
-      localStorage.removeItem('searchHistory');
-      displaySearchHistory();
-    }
-
-    function toggleHistory() {
-      const historySection = document.getElementById("historySection");
-      if (historySection.style.display === "none") {
-        historySection.style.display = "block";
-        document.getElementById("searchResults").style.display = "none";
-        document.getElementById("newsContainer").style.display = "none";
-        displaySearchHistory();
-      } else {
-        historySection.style.display = "none";
-        document.getElementById("searchResults").style.display = "block";
-        document.getElementById("newsContainer").style.display = "block";
-      }
-    }
-
-    window.onload = function() {
-      checkLoginStatus(); // cek status login saat reload
-
-      fetchLatestNews();
-      generateYearOptions();
-
-      if (localStorage.getItem("darkMode") === "true") {
-        document.body.classList.add("dark-mode");
-        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
-      }
-
-      document.getElementById("searchInput").focus();
-    };
-  </script>
-
-  <style>
-    /* CSS tetap sama seperti sebelumnya */
-    :root {
-      --primary-color: #4361ee;
-      --primary-light: #e0e5ff;
-      --secondary-color: #3f37c9;
-      --accent-color: #4895ef;
-      --light-color: #f8f9fa;
-      --dark-color: #212529;
-      --text-color: #333;
-      --text-light: #6c757d;
-      --bg-color: #ffffff;
-      --card-bg: #ffffff;
-      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      --border-radius: 12px;
-      --border: 1px solid rgba(0, 0, 0, 0.08);
-      --transition: all 0.2s ease;
-    }
-
-    .dark-mode {
-      --primary-color: #4895ef;
-      --primary-light: #1e2b6b;
-      --secondary-color: #4361ee;
-      --accent-color: #3f37c9;
-      --light-color: #1e1e1e;
-      --dark-color: #f8f9fa;
-      --text-color: #f1f1f1;
-      --text-light: #adb5bd;
-      --bg-color: #121212;
-      --card-bg: #1e1e1e;
-      --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-      --border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      line-height: 1.6;
-      transition: var(--transition);
-      padding: 0;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: var(--bg-color);
-    }
-
-    /* ... (CSS lainnya tetap sama) ... */
-  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div id="logo">WHARSA</div>
-      <p class="tagline">Academic Reference Search</p>
+  <header>
+    <h1>WHARSA</h1>
+    <div id="authSection">
+      <button id="signInBtn">Login dengan Google</button>
+      <button id="signOutBtn" style="display:none;">Logout</button>
+      <span id="userInfo"></span>
+    </div>
+  </header>
 
-      <div class="user-menu">
-        <!-- Foto Profil -->
-        <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
-
-        <!-- Tombol Sign In Google -->
-        <div id="googleSignIn" class="g_id_signin"
-             data-type="standard"
-             data-shape="pill"
-             data-theme="outline"
-             data-text="signin_with"
-             data-size="medium"
-             data-logo_alignment="left">
-        </div>
-
-        <!-- Tombol Sign Out -->
-        <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
-          Keluar
-        </button>
-      </div>
-    </header>
-
-    <!-- Google Identity Service -->
-    <div id="g_id_onload"
-         data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
+  <main>
+    <h2>Hasil Pencarian Jurnal</h2>
+    <!-- Contoh hasil -->
+    <div class="result-card">
+      <h3>Contoh Jurnal 1</h3>
+      <p>Ini contoh abstrak jurnal.</p>
+      <button onclick="saveBookmark('Contoh Jurnal 1', 'https://contoh-jurnal.com')">🔖 Tambahkan Bookmark</button>
     </div>
 
-    <div class="search-container">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
-        <button onclick="performSearch()">Cari</button>
-      </div>
-      
-      <div class="filter-container">
-        <div class="year-range-filter">
-          <label for="yearStart">Rentang Tahun:</label>
-          <div class="year-range-selects">
-            <select id="yearStart" onchange="handleYearFilter()">
-              <!-- Opsi tahun akan di-generate oleh JavaScript -->
-            </select>
-            <select id="yearEnd" onchange="handleYearFilter()">
-              <!-- Opsi tahun akan di-generate oleh JavaScript -->
-            </select>
-          </div>
-        </div>
-      </div>
+    <div class="result-card">
+      <h3>Contoh Jurnal 2</h3>
+      <p>Ini contoh abstrak jurnal kedua.</p>
+      <button onclick="saveBookmark('Contoh Jurnal 2', 'https://contoh-jurnal-2.com')">🔖 Tambahkan Bookmark</button>
     </div>
+  </main>
 
-    <div class="shortcuts">
-      <button class="shortcut shortcut-primary" onclick="toggleHistory()">🕒 Riwayat Pencarian</button>
-      <a href="https://sma-waha1.sch.id/" target="_blank" class="shortcut">🏫 Website Sekolah</a>
-      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="shortcut">📖 Perpustakaan Digital</a>
-      <a href="bookmarks.html" class="shortcut">🔖 Bookmark Saya</a>
-    </div>
+  <a href="bookmark.html">📚 Lihat Bookmark Saya</a>
 
-    <div id="searchResults"></div>
-    <div id="newsContainer"></div>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <!-- Search History Section -->
-    <div id="historySection">
-      <div class="history-header">
-        <h2>Riwayat Pencarian</h2>
-        <div class="history-actions">
-          <button class="shortcut" onclick="clearSearchHistory()">🧹 Hapus Semua</button>
-          <button class="shortcut shortcut-primary" onclick="toggleHistory()">🔍 Kembali ke Pencarian</button>
-        </div>
-      </div>
-      <div id="historyContainer">
-        <!-- History items will be inserted here by JavaScript -->
-      </div>
-    </div>
-  </div>
+    // 🔥 Konfigurasi Firebase (ganti dengan punyamu)
+    const firebaseConfig = {
+      apiKey: "API_KEY",
+      authDomain: "PROJECT_ID.firebaseapp.com",
+      projectId: "PROJECT_ID",
+      storageBucket: "PROJECT_ID.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
 
-  <!-- Mobile Navigation -->
-  <div class="mobile-nav">
-    <div class="mobile-nav-items">
-      <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
-        <span>🕒</span>
-        <span>Riwayat</span>
-      </a>
-      <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
-        <span>🏫</span>
-        <span>Sekolah</span>
-      </a>
-      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
-        <span>📖</span>
-        <span>Perpustakaan</span>
-      </a>
-      <a href="bookmarks.html" class="mobile-nav-item">
-        <span>🔖</span>
-        <span>Bookmark</span>
-      </a>
-    </div>
-  </div>
+    // Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-  <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const userInfo = document.getElementById("userInfo");
+    let currentUser = null;
+
+    // Login
+    signInBtn.addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("Login error:", error);
+      }
+    });
+
+    // Logout
+    signOutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    // Monitor user login/logout
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        userInfo.textContent = `Login sebagai ${user.displayName}`;
+        signInBtn.style.display = "none";
+        signOutBtn.style.display = "inline-block";
+      } else {
+        currentUser = null;
+        userInfo.textContent = "";
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+      }
+    });
+
+    // ✅ Fungsi simpan bookmark
+    window.saveBookmark = async function(title, url) {
+      if (!currentUser) {
+        alert("⚠️ Silakan login dulu untuk menyimpan bookmark.");
+        return;
+      }
+      try {
+        await addDoc(collection(db, "bookmarks"), {
+          title: title,
+          url: url,
+          userId: currentUser.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        alert("✅ Bookmark berhasil disimpan!");
+      } catch (e) {
+        console.error("Error menambahkan bookmark: ", e);
+      }
+    }
+  </script>
 </body>
 </html>
-
