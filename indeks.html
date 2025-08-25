@@ -19,29 +19,36 @@
 
   <main>
     <h2>Hasil Pencarian Jurnal</h2>
-    <!-- Contoh hasil -->
+
+    <!-- Contoh hasil jurnal -->
     <div class="result-card">
       <h3>Contoh Jurnal 1</h3>
       <p>Ini contoh abstrak jurnal.</p>
-      <button onclick="saveBookmark('Contoh Jurnal 1', 'https://contoh-jurnal.com')">🔖 Tambahkan Bookmark</button>
+      <button onclick="saveBookmark('Contoh Jurnal 1', 'https://contoh-jurnal.com', ['fisika','sains'])">🔖 Tambahkan Bookmark</button>
     </div>
 
     <div class="result-card">
       <h3>Contoh Jurnal 2</h3>
       <p>Ini contoh abstrak jurnal kedua.</p>
-      <button onclick="saveBookmark('Contoh Jurnal 2', 'https://contoh-jurnal-2.com')">🔖 Tambahkan Bookmark</button>
+      <button onclick="saveBookmark('Contoh Jurnal 2', 'https://contoh-jurnal-2.com', ['teknologi'])">🔖 Tambahkan Bookmark</button>
     </div>
   </main>
 
-  <a href="bookmark.html">📚 Lihat Bookmark Saya</a>
+  <footer>
+    <a href="bookmark.html">📚 Lihat Bookmark Saya</a>
+  </footer>
 
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { 
+      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { 
+      getFirestore, collection, addDoc, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 🔥 Konfigurasi Firebase (ganti dengan punyamu)
+    // 🔥 Ganti dengan konfigurasi Firebase-mu
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "PROJECT_ID.firebaseapp.com",
@@ -76,7 +83,7 @@
       await signOut(auth);
     });
 
-    // Monitor user login/logout
+    // Monitor status login
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
@@ -91,8 +98,8 @@
       }
     });
 
-    // ✅ Fungsi simpan bookmark
-    window.saveBookmark = async function(title, url) {
+    // ✅ Fungsi simpan bookmark (100% cocok dengan bookmark.html)
+    window.saveBookmark = async function(title, url, tags = []) {
       if (!currentUser) {
         alert("⚠️ Silakan login dulu untuk menyimpan bookmark.");
         return;
@@ -101,11 +108,13 @@
         await addDoc(collection(db, "bookmarks"), {
           title: title,
           url: url,
-          userId: currentUser.uid,
+          tags: tags,
+          userId: currentUser.uid,   // harus ada biar bisa difilter di bookmark.html
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
         alert("✅ Bookmark berhasil disimpan!");
+        console.log("Bookmark tersimpan untuk:", currentUser.uid);
       } catch (e) {
         console.error("Error menambahkan bookmark: ", e);
       }
