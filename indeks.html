@@ -23,25 +23,25 @@
 
     // Fungsi untuk memeriksa dan memulihkan status login
     function checkLoginStatus() {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
 
-        // Update UI ke kondisi login
-        document.getElementById("profilePic").src = currentUser.picture;
-        document.getElementById("profilePic").style.display = "block";
-        document.getElementById("googleSignIn").style.display = "none";
-        document.getElementById("signOutBtn").style.display = "inline-block";
+    // Update UI ke kondisi login
+    document.getElementById("profilePic").src = currentUser.picture;
+    document.getElementById("profilePic").style.display = "block";
+    document.getElementById("googleSignIn").style.display = "none";
+    document.getElementById("signOutBtn").style.display = "inline-block";
 
-        updateUIAfterAuth();
-        loadBookmarks();
-      } else {
-        // Kalau belum login
-        document.getElementById("profilePic").style.display = "none";
-        document.getElementById("googleSignIn").style.display = "block";
-        document.getElementById("signOutBtn").style.display = "none";
-      }
-    }
+    updateUIAfterAuth();
+    loadBookmarks();
+  } else {
+    // Kalau belum login
+    document.getElementById("profilePic").style.display = "none";
+    document.getElementById("googleSignIn").style.display = "block";
+    document.getElementById("signOutBtn").style.display = "none";
+  }
+}
 
     // Fungsi untuk memuat bookmark
     function loadBookmarks() {
@@ -59,38 +59,38 @@
     }
 
     // Handle Google Sign-In
-    function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      currentUser = {
-        name: data.name,
-        email: data.email,
-        picture: data.picture
-      };
+   function handleCredentialResponse(response) {
+  const data = parseJwt(response.credential);
+  currentUser = {
+    name: data.name,
+    email: data.email,
+    picture: data.picture
+  };
 
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
-      // Update UI
-      document.getElementById("profilePic").src = currentUser.picture;
-      document.getElementById("profilePic").style.display = "block";
-      document.getElementById("googleSignIn").style.display = "none";
-      document.getElementById("signOutBtn").style.display = "inline-block";
+  // Update UI
+  document.getElementById("profilePic").src = currentUser.picture;
+  document.getElementById("profilePic").style.display = "block";
+  document.getElementById("googleSignIn").style.display = "none";
+  document.getElementById("signOutBtn").style.display = "inline-block";
 
-      loadBookmarks();
-      updateUIAfterAuth();
-    }
+  loadBookmarks();
+  updateUIAfterAuth();
+}
 
-    function signOut() {
-      currentUser = null;
-      localStorage.removeItem('currentUser');
+function signOut() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
 
-      // Update UI
-      document.getElementById("profilePic").style.display = "none";
-      document.getElementById("googleSignIn").style.display = "block";
-      document.getElementById("signOutBtn").style.display = "none";
+  // Update UI
+  document.getElementById("profilePic").style.display = "none";
+  document.getElementById("googleSignIn").style.display = "block";
+  document.getElementById("signOutBtn").style.display = "none";
 
-      userBookmarks = {};
-      updateUIAfterAuth();
-    }
+  userBookmarks = {};
+  updateUIAfterAuth();
+}
 
     function parseJwt(token) {
       let base64Url = token.split('.')[1];
@@ -99,6 +99,15 @@
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
       return JSON.parse(jsonPayload);
+    }
+
+    function signOut() {
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      document.getElementById("profilePic").style.display = "none";
+      document.getElementById("googleSignIn").style.display = "block";
+      userBookmarks = {};
+      updateUIAfterAuth();
     }
 
     function toggleBookmark(link, title) {
@@ -173,7 +182,7 @@
         }
       } catch (error) {
         console.error("Error fetching news:", error);
-        document.getElementById("newsContainer").innerHTML = "<p class='error-msg'>Gagal memuat berita. Silakan coba lagi.</p>";
+        document.getElementById("newsContainer").innerHTML += "<p class='error-msg'>Gagal memuat berita. Silakan coba lagi.</p>";
       }
     }
 
@@ -253,7 +262,6 @@
           resultItem.classList.add("result-card");
           
           const isBookmarked = userBookmarks[item.link] ? true : false;
-          const escapedTitle = item.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
           
           resultItem.innerHTML = `
             <div class="result-content">
@@ -261,7 +269,7 @@
                 <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
                 <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
                         data-link="${item.link}"
-                        onclick="toggleBookmark('${item.link}', '${escapedTitle}')">
+                        onclick="toggleBookmark('${item.link}', '${item.title.replace(/'/g, "\\'")}')">
                   ${isBookmarked ? '★' : '☆'}
                 </button>
               </div>
@@ -452,7 +460,7 @@
         
         html += `
           <div class="history-item">
-            <div class="history-query" onclick="searchFromHistory('${item.query.replace(/'/g, "\\'")}')">
+            <div class="history-query" onclick="searchFromHistory('${item.query}')">
               ${index + 1}. ${item.query}
             </div>
             <div class="history-date">${formattedDate}</div>
@@ -495,20 +503,19 @@
         document.getElementById("newsContainer").style.display = "block";
       }
     }
+   window.onload = function() {
+  checkLoginStatus(); // cek status login saat reload
 
-    window.onload = function() {
-      checkLoginStatus(); // cek status login saat reload
+  fetchLatestNews();
+  generateYearOptions();
 
-      fetchLatestNews();
-      generateYearOptions();
+  if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark-mode");
+    document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
+  }
 
-      if (localStorage.getItem("darkMode") === "true") {
-        document.body.classList.add("dark-mode");
-        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
-      }
-
-      document.getElementById("searchInput").focus();
-    };
+  document.getElementById("searchInput").focus();
+};
   </script>
   <style>
     :root {
@@ -865,7 +872,6 @@
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 10px;
-      gap: 10px;
     }
 
     .result-card h3 {
@@ -894,6 +900,7 @@
       color: var(--text-light);
       transition: var(--transition);
       flex-shrink: 0;
+      margin-left: 10px;
     }
 
     .bookmark-btn:hover {
@@ -1141,37 +1148,47 @@
 
     .history-item:hover {
       background-color: var(--light-color);
+      transform: translateY(-2px);
+    }
+
+    .dark-mode .history-item:hover {
+      background-color: var(--light-color);
     }
 
     .history-query {
       flex: 1;
       cursor: pointer;
+      color: var(--primary-color);
+      font-size: 15px;
+      line-height: 1.4;
+      word-break: break-word;
       font-weight: 500;
-      transition: var(--transition);
     }
 
     .history-query:hover {
-      color: var(--primary-color);
+      text-decoration: underline;
     }
 
     .history-date {
       color: var(--text-light);
-      font-size: 12px;
+      font-size: 13px;
       margin: 0 15px;
+      white-space: nowrap;
     }
 
     .history-delete {
       background: none;
       border: none;
       color: var(--text-light);
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
-      padding: 0 5px;
+      padding: 0 8px;
       transition: var(--transition);
     }
 
     .history-delete:hover {
       color: #ff6b6b;
+      transform: scale(1.2);
     }
 
     .no-history {
@@ -1180,31 +1197,97 @@
       color: var(--text-light);
     }
 
-    /* Responsive Styles */
+    /* Mobile Navigation */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 90;
+      padding: 12px 0;
+      border-top: var(--border);
+    }
+
+    .mobile-nav-items {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-color);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+
+    .mobile-nav-item:hover {
+      color: var(--primary-color);
+      background-color: var(--primary-light);
+    }
+
+    .mobile-nav-item span:first-child {
+      font-size: 22px;
+      margin-bottom: 5px;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
       .container {
         padding: 15px;
+        padding-bottom: 80px;
       }
-
+      
+      header {
+        margin-bottom: 20px;
+        padding: 15px 0;
+      }
+      
       #logo {
         font-size: 2.5rem;
+        letter-spacing: -1px;
       }
-
+      
+      .tagline {
+        font-size: 0.9rem;
+      }
+      
       .user-menu {
         position: static;
         justify-content: center;
-        margin-top: 15px;
+        margin-bottom: 15px;
       }
-
+      
       .search-box {
         flex-direction: column;
       }
-
-      .search-box button {
-        padding: 12px;
-        min-height: 50px;
+      
+      #searchInput {
+        width: 100%;
+        margin-bottom: 0;
+        padding: 15px;
       }
-
+      
+      .search-box button {
+        width: 100%;
+        padding: 15px;
+      }
+      
+      .news-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .shortcuts {
+        display: none;
+      }
+      
       .filter-container {
         flex-direction: column;
         align-items: stretch;
@@ -1213,27 +1296,15 @@
       .year-range-filter {
         flex-direction: column;
         align-items: stretch;
+        gap: 8px;
       }
 
       .year-range-selects {
         flex-direction: column;
       }
-
-      .shortcuts {
-        flex-direction: column;
-      }
-
-      .shortcut {
-        min-width: auto;
-      }
-
-      .results-header {
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .news-grid {
-        grid-template-columns: 1fr;
+      
+      #yearStart, #yearEnd {
+        width: 100%;
       }
 
       .history-item {
@@ -1243,29 +1314,47 @@
       }
 
       .history-date {
-        margin: 0;
+        margin-left: 0;
+        margin-right: 0;
+        font-size: 12px;
+      }
+
+      .history-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .mobile-nav {
+        display: block;
       }
 
       #darkModeBtn {
-        bottom: 20px;
-        right: 20px;
-        padding: 10px 15px;
-        font-size: 12px;
+        padding: 10px 16px;
+        font-size: 13px;
+        bottom: 90px;
       }
     }
 
-    @media (max-width: 480px) {
-      .result-header {
-        flex-direction: column;
+    @media (min-width: 769px) {
+      .container {
+        padding-bottom: 30px;
       }
-
-      .bookmark-btn {
-        align-self: flex-end;
+      
+      .results-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
       }
-
-      .pagination a {
-        padding: 6px 10px;
-        min-width: 35px;
+      
+      .history-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .history-item {
+        flex-direction: row;
+        align-items: center;
       }
     }
   </style>
@@ -1273,34 +1362,51 @@
 <body>
   <div class="container">
     <header>
-      <div id="logo">WHARSA</div>
-      <p class="tagline">Pencarian Referensi Akademik untuk Dunia Pendidikan Indonesia</p>
-      
-      <div class="user-menu">
-        <div id="googleSignIn" class="g_id_signin" data-type="standard" data-theme="outline" data-text="sign_in_with" data-shape="pill" data-logo_alignment="left" data-width="200" data-height="40"></div>
-        
-        <div id="userProfile" class="user-profile" style="display: none;">
-          <img id="profilePic" class="user-avatar" src="" alt="Profile">
-          <button id="signOutBtn" class="sign-out-btn" onclick="signOut()">Keluar</button>
-        </div>
-      </div>
-    </header>
+  <div id="logo">WHARSA</div>
+  <p class="tagline">Academic Reference Search</p>
 
+  <div class="user-menu">
+    <!-- Foto Profil -->
+    <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
+
+    <!-- Tombol Sign In Google -->
+    <div id="googleSignIn" class="g_id_signin"
+         data-type="standard"
+         data-shape="pill"
+         data-theme="outline"
+         data-text="signin_with"
+         data-size="medium"
+         data-logo_alignment="left">
+    </div>
+
+    <!-- Tombol Sign Out -->
+    <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
+      Keluar
+    </button>
+  </div>
+</header>
+
+<!-- Google Identity Service -->
+<div id="g_id_onload"
+     data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
+     data-callback="handleCredentialResponse"
+     data-auto_prompt="false">
+</div>
     <div class="search-container">
       <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Masukkan kata kunci jurnal atau artikel..." onkeypress="handleKeyPress(event)">
+        <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
         <button onclick="performSearch()">Cari</button>
       </div>
       
       <div class="filter-container">
         <div class="year-range-filter">
-          <label>Filter Tahun:</label>
+          <label for="yearStart">Rentang Tahun:</label>
           <div class="year-range-selects">
             <select id="yearStart" onchange="handleYearFilter()">
-              <option value="">Tahun Awal</option>
+              <!-- Opsi tahun akan di-generate oleh JavaScript -->
             </select>
             <select id="yearEnd" onchange="handleYearFilter()">
-              <option value="">Tahun Akhir</option>
+              <!-- Opsi tahun akan di-generate oleh JavaScript -->
             </select>
           </div>
         </div>
@@ -1308,75 +1414,52 @@
     </div>
 
     <div class="shortcuts">
-      <div class="shortcut" onclick="performSearch()">
-        <span>🔍</span> Cari Sekarang
-      </div>
-      <div class="shortcut" onclick="toggleHistory()">
-        <span>📚</span> Riwayat Pencarian
-      </div>
-      <div class="shortcut shortcut-primary" onclick="fetchLatestNews()">
-        <span>🔄</span> Muat Ulang Berita
-      </div>
+      <button class="shortcut shortcut-primary" onclick="toggleHistory()">🕒 Riwayat Pencarian</button>
+      <a href="https://sma-waha1.sch.id/" target="_blank" class="shortcut">🏫 Website Sekolah</a>
+      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="shortcut">📖 Perpustakaan Digital</a>
+      <a href="bookmarks.html" class="shortcut">🔖 Bookmark Saya</a>
     </div>
 
-    <div id="searchResults">
-      <p class="no-data">Masukkan kata kunci untuk mencari jurnal akademik</p>
-    </div>
+    <div id="searchResults"></div>
+    <div id="newsContainer"></div>
 
+    <!-- Search History Section -->
     <div id="historySection">
       <div class="history-header">
-        <h2>📚 Riwayat Pencarian</h2>
+        <h2>Riwayat Pencarian</h2>
         <div class="history-actions">
-          <button class="shortcut" onclick="clearSearchHistory()">Hapus Semua</button>
-          <button class="shortcut" onclick="toggleHistory()">Tutup</button>
+          <button class="shortcut" onclick="clearSearchHistory()">🧹 Hapus Semua</button>
+          <button class="shortcut shortcut-primary" onclick="toggleHistory()">🔍 Kembali ke Pencarian</button>
         </div>
       </div>
       <div id="historyContainer">
-        <p class="no-history">Belum ada riwayat pencarian</p>
+        <!-- History items will be inserted here by JavaScript -->
       </div>
     </div>
-
-    <div id="newsContainer">
-      <!-- News content will be loaded here -->
-    </div>
-
-    <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
   </div>
 
-  <script>
-    // Initialize Google Sign-In
-    window.onload = function () {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse
-      });
-      
-      google.accounts.id.renderButton(
-        document.getElementById("googleSignIn"),
-        { 
-          theme: "outline", 
-          size: "large",
-          width: 200,
-          text: "signin_with",
-          shape: "pill"
-        }
-      );
-      
-      // Check if user is already logged in
-      checkLoginStatus();
-      
-      // Load other initial data
-      fetchLatestNews();
-      generateYearOptions();
-      
-      // Apply dark mode if enabled
-      if (localStorage.getItem("darkMode") === "true") {
-        document.body.classList.add("dark-mode");
-        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
-      }
-      
-      document.getElementById("searchInput").focus();
-    };
-  </script>
+  <!-- Mobile Navigation -->
+  <div class="mobile-nav">
+    <div class="mobile-nav-items">
+      <a href="#" class="mobile-nav-item" onclick="toggleHistory(); return false;">
+        <span>🕒</span>
+        <span>Riwayat</span>
+      </a>
+      <a href="https://sma-waha1.sch.id/" target="_blank" class="mobile-nav-item">
+        <span>🏫</span>
+        <span>Sekolah</span>
+      </a>
+      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="mobile-nav-item">
+        <span>📖</span>
+        <span>Perpustakaan</span>
+      </a>
+      <a href="bookmarks.html" class="mobile-nav-item">
+        <span>🔖</span>
+        <span>Bookmark</span>
+      </a>
+    </div>
+  </div>
+
+  <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
 </body>
 </html>
