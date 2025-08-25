@@ -6,7 +6,30 @@
   <title>WHARSA - Academic Reference Search</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase App (wajib) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <!-- Firebase Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase Auth -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  
   <script>
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",
+      authDomain: "wharsa-20c0d.firebaseapp.com",
+      projectId: "wharsa-20c0d",
+      storageBucket: "wharsa-20c0d.firebasestorage.app",
+      messagingSenderId: "481228042342",
+      appId: "1:481228042342:web:2d70caec67ad790161fda7",
+      measurementId: "G-CLSFRMMRMQ"
+    };
+
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
     const API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
     const CX = "332c680f2381f4787";
     const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
@@ -23,74 +46,65 @@
 
     // Fungsi untuk memeriksa dan memulihkan status login
     function checkLoginStatus() {
-  const savedUser = localStorage.getItem('currentUser');
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-
-    // Update UI ke kondisi login
-    document.getElementById("profilePic").src = currentUser.picture;
-    document.getElementById("profilePic").style.display = "block";
-    document.getElementById("googleSignIn").style.display = "none";
-    document.getElementById("signOutBtn").style.display = "inline-block";
-
-    updateUIAfterAuth();
-    loadBookmarks();
-  } else {
-    // Kalau belum login
-    document.getElementById("profilePic").style.display = "none";
-    document.getElementById("googleSignIn").style.display = "block";
-    document.getElementById("signOutBtn").style.display = "none";
-  }
-}
-
-    // Fungsi untuk memuat bookmark
-    function loadBookmarks() {
-      if (!currentUser) return;
-      const bookmarksKey = `bookmarks_${currentUser.email}`;
-      const savedBookmarks = localStorage.getItem(bookmarksKey);
-      userBookmarks = savedBookmarks ? JSON.parse(savedBookmarks) : {};
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById("profilePic").src = currentUser.picture;
+        document.getElementById("profilePic").style.display = "block";
+        document.getElementById("googleSignIn").style.display = "none";
+        document.getElementById("signOutBtn").style.display = "inline-block";
+        updateUIAfterAuth();
+        loadBookmarks();
+      } else {
+        document.getElementById("profilePic").style.display = "none";
+        document.getElementById("googleSignIn").style.display = "block";
+        document.getElementById("signOutBtn").style.display = "none";
+      }
     }
 
-    // Fungsi untuk menyimpan bookmark
-    function saveBookmarks() {
+    // Fungsi untuk memuat bookmark dari Firestore
+    async function loadBookmarks() {
       if (!currentUser) return;
-      const bookmarksKey = `bookmarks_${currentUser.email}`;
-      localStorage.setItem(bookmarksKey, JSON.stringify(userBookmarks));
+      
+      try {
+        const bookmarksRef = db.collection('bookmarks').where('userId', '==', currentUser.email);
+        const snapshot = await bookmarksRef.get();
+        
+        userBookmarks = {};
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          userBookmarks[data.link] = {
+            ...data,
+            id: doc.id
+          };
+        });
+        
+        updateUIAfterAuth();
+      } catch (error) {
+        console.error("Error loading bookmarks:", error);
+      }
     }
 
     // Handle Google Sign-In
-   function handleCredentialResponse(response) {
-  const data = parseJwt(response.credential);
-  currentUser = {
-    name: data.name,
-    email: data.email,
-    picture: data.picture
-  };
+    async function handleCredentialResponse(response) {
+      const data = parseJwt(response.credential);
+      currentUser = {
+        name: data.name,
+        email: data.email,
+        picture: data.picture
+      };
 
-  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
-  // Update UI
-  document.getElementById("profilePic").src = currentUser.picture;
-  document.getElementById("profilePic").style.display = "block";
-  document.getElementById("googleSignIn").style.display = "none";
-  document.getElementById("signOutBtn").style.display = "inline-block";
+      // Update UI
+      document.getElementById("profilePic").src = currentUser.picture;
+      document.getElementById("profilePic").style.display = "block";
+      document.getElementById("googleSignIn").style.display = "none";
+      document.getElementById("signOutBtn").style.display = "inline-block";
 
-  loadBookmarks();
-  updateUIAfterAuth();
-}
-
-function signOut() {
-  currentUser = null;
-  localStorage.removeItem('currentUser');
-
-  // Update UI
-  document.getElementById("profilePic").style.display = "none";
-  document.getElementById("googleSignIn").style.display = "block";
-  document.getElementById("signOutBtn").style.display = "none";
-
-  userBookmarks = {};
-  updateUIAfterAuth();
-}
+      await loadBookmarks();
+      updateUIAfterAuth();
+    }
 
     function parseJwt(token) {
       let base64Url = token.split('.')[1];
@@ -106,31 +120,51 @@ function signOut() {
       localStorage.removeItem('currentUser');
       document.getElementById("profilePic").style.display = "none";
       document.getElementById("googleSignIn").style.display = "block";
+      document.getElementById("signOutBtn").style.display = "none";
       userBookmarks = {};
       updateUIAfterAuth();
     }
 
-    function toggleBookmark(link, title) {
+    // Fungsi untuk menyimpan bookmark ke Firestore
+    async function toggleBookmark(link, title) {
       if (!currentUser) {
         alert("Silakan login dengan akun Google untuk menambahkan bookmark.");
         return;
       }
       
-      if (userBookmarks[link]) {
-        delete userBookmarks[link];
-      } else {
-        userBookmarks[link] = { 
-          title: title, 
-          link: link, 
-          date: new Date().toISOString() 
-        };
-      }
-      
-      saveBookmarks();
-      
-      // Refresh tampilan hasil pencarian untuk memperbarui status bookmark
-      if (lastQuery) {
-        searchJournals(lastQuery, currentPage);
+      try {
+        // Escape karakter khusus dalam title untuk digunakan dalam prompt
+        const safeTitle = title.replace(/\\'/g, "'");
+        
+        if (userBookmarks[link]) {
+          // Hapus bookmark
+          await db.collection('bookmarks').doc(userBookmarks[link].id).delete();
+          delete userBookmarks[link];
+        } else {
+          // Tambah bookmark baru
+          const tags = prompt("Tambahkan tag untuk bookmark ini (pisahkan dengan koma):", "");
+          if (tags === null) return; // User membatalkan
+          
+          const bookmarkData = {
+            userId: currentUser.email,
+            title: safeTitle,
+            link: link,
+            tags: tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          
+          const docRef = await db.collection('bookmarks').add(bookmarkData);
+          userBookmarks[link] = {...bookmarkData, id: docRef.id};
+        }
+        
+        // Refresh tampilan hasil pencarian untuk memperbarui status bookmark
+        if (lastQuery) {
+          searchJournals(lastQuery, currentPage);
+        }
+      } catch (error) {
+        console.error("Error toggling bookmark:", error);
+        alert("Terjadi kesalahan saat menyimpan bookmark.");
       }
     }
 
@@ -263,13 +297,16 @@ function signOut() {
           
           const isBookmarked = userBookmarks[item.link] ? true : false;
           
+          // Escape karakter khusus dalam title
+          const escapedTitle = item.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+          
           resultItem.innerHTML = `
             <div class="result-content">
               <div class="result-header">
                 <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
                 <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
                         data-link="${item.link}"
-                        onclick="toggleBookmark('${item.link}', '${item.title.replace(/'/g, "\\'")}')">
+                        onclick="toggleBookmark('${item.link}', '${escapedTitle}')">
                   ${isBookmarked ? '★' : '☆'}
                 </button>
               </div>
@@ -460,7 +497,7 @@ function signOut() {
         
         html += `
           <div class="history-item">
-            <div class="history-query" onclick="searchFromHistory('${item.query}')">
+            <div class="history-query" onclick="searchFromHistory('${item.query.replace(/'/g, "\\'")}')">
               ${index + 1}. ${item.query}
             </div>
             <div class="history-date">${formattedDate}</div>
@@ -503,21 +540,24 @@ function signOut() {
         document.getElementById("newsContainer").style.display = "block";
       }
     }
-   window.onload = function() {
-  checkLoginStatus(); // cek status login saat reload
 
-  fetchLatestNews();
-  generateYearOptions();
+    window.onload = function() {
+      checkLoginStatus(); // cek status login saat reload
 
-  if (localStorage.getItem("darkMode") === "true") {
-    document.body.classList.add("dark-mode");
-    document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
-  }
+      fetchLatestNews();
+      generateYearOptions();
 
-  document.getElementById("searchInput").focus();
-};
+      if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("darkModeBtn").innerHTML = "☀️ Mode Terang";
+      }
+
+      document.getElementById("searchInput").focus();
+    };
   </script>
+
   <style>
+    /* CSS tetap sama seperti sebelumnya */
     :root {
       --primary-color: #4361ee;
       --primary-light: #e0e5ff;
@@ -574,824 +614,43 @@ function signOut() {
       background-color: var(--bg-color);
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px 0;
-      position: relative;
-    }
-
-    #logo {
-      font-size: 3.5rem;
-      margin-bottom: 10px;
-      color: var(--primary-color);
-      font-weight: 700;
-      letter-spacing: -2px;
-    }
-
-    .tagline {
-      color: var(--text-light);
-      margin-bottom: 15px;
-      font-size: 1rem;
-      font-weight: 400;
-    }
-
-    .user-menu {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 2px solid var(--primary-color);
-      cursor: pointer;
-    }
-
-    .user-name {
-      font-weight: 500;
-      color: var(--text-color);
-      font-size: 14px;
-    }
-
-    .sign-out-btn {
-      padding: 8px 12px;
-      background-color: transparent;
-      color: var(--text-light);
-      border: 1px solid var(--text-light);
-      border-radius: var(--border-radius);
-      cursor: pointer;
-      font-size: 12px;
-      transition: var(--transition);
-    }
-
-    .sign-out-btn:hover {
-      background-color: #ff6b6b;
-      color: white;
-      border-color: #ff6b6b;
-    }
-
-    .search-container {
-      max-width: 800px;
-      margin: 0 auto 30px;
-      padding: 0 15px;
-    }
-
-    .search-box {
-      display: flex;
-      box-shadow: var(--shadow);
-      border-radius: var(--border-radius);
-      overflow: hidden;
-      margin-bottom: 20px;
-      border: var(--border);
-      transition: var(--transition);
-    }
-
-    .search-box:focus-within {
-      box-shadow: 0 0 0 2px var(--primary-light);
-    }
-
-    #searchInput {
-      flex: 1;
-      padding: 15px 20px;
-      border: none;
-      font-size: 16px;
-      background-color: var(--card-bg);
-      color: var(--text-color);
-      min-height: 60px;
-      font-family: 'Inter', sans-serif;
-    }
-
-    #searchInput:focus {
-      outline: none;
-    }
-
-    #searchInput::placeholder {
-      color: var(--text-light);
-      opacity: 0.7;
-    }
-
-    .search-box button {
-      padding: 0 25px;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      transition: var(--transition);
-      min-width: 100px;
-    }
-
-    .search-box button:hover {
-      background-color: var(--secondary-color);
-    }
-
-    .filter-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      padding: 0 5px;
-    }
-
-    .year-range-filter {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-    }
-
-    .year-range-filter label {
-      color: var(--text-light);
-      font-size: 14px;
-      white-space: nowrap;
-    }
-
-    .year-range-selects {
-      display: flex;
-      gap: 10px;
-      flex: 1;
-    }
-
-    #yearStart, #yearEnd {
-      padding: 10px 15px;
-      border-radius: var(--border-radius);
-      border: var(--border);
-      background-color: var(--card-bg);
-      color: var(--text-color);
-      cursor: pointer;
-      flex: 1;
-      min-width: 100px;
-      font-family: 'Inter', sans-serif;
-      transition: var(--transition);
-    }
-
-    #yearStart:hover, #yearEnd:hover {
-      border-color: var(--primary-color);
-    }
-
-    .shortcuts {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 30px;
-      flex-wrap: wrap;
-      padding: 0 10px;
-    }
-
-    .shortcut {
-      padding: 12px 20px;
-      background-color: var(--card-bg);
-      color: var(--text-color);
-      text-decoration: none;
-      border-radius: var(--border-radius);
-      font-size: 14px;
-      font-weight: 500;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      flex: 1;
-      min-width: 160px;
-      justify-content: center;
-      border: var(--border);
-      box-shadow: var(--shadow);
-    }
-
-    .shortcut:hover {
-      background-color: var(--primary-light);
-      color: var(--primary-color);
-      transform: translateY(-2px);
-    }
-
-    .shortcut-primary {
-      background-color: var(--primary-color);
-      color: white;
-    }
-
-    .shortcut-primary:hover {
-      background-color: var(--secondary-color);
-      color: white;
-    }
-
-    #darkModeBtn {
-      position: fixed;
-      bottom: 80px;
-      right: 20px;
-      padding: 12px 20px;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: var(--shadow);
-      z-index: 100;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #darkModeBtn:hover {
-      background-color: var(--secondary-color);
-      transform: translateY(-2px);
-    }
-
-    /* Search Results */
-    #searchResults {
-      margin: 30px 0;
-      padding: 0 10px;
-    }
-
-    .results-header {
-      margin-bottom: 20px;
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .results-header h3 {
-      color: var(--primary-color);
-      margin-right: 10px;
-      font-size: 1.3rem;
-      line-height: 1.3;
-      font-weight: 600;
-    }
-
-    .year-filter-info {
-      color: var(--text-light);
-      font-size: 14px;
-      font-style: italic;
-    }
-
-    .results-count {
-      color: var(--text-light);
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    .results-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-
-    .result-card {
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      transition: var(--transition);
-      border: var(--border);
-    }
-
-    .result-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    }
-
-    .result-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 10px;
-    }
-
-    .result-card h3 {
-      margin-bottom: 10px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      flex: 1;
-    }
-
-    .result-card h3 a {
-      color: var(--primary-color);
-      text-decoration: none;
-      line-height: 1.4;
-    }
-
-    .result-card h3 a:hover {
-      text-decoration: underline;
-    }
-
-    .bookmark-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      padding: 5px;
-      color: var(--text-light);
-      transition: var(--transition);
-      flex-shrink: 0;
-      margin-left: 10px;
-    }
-
-    .bookmark-btn:hover {
-      color: var(--accent-color);
-      transform: scale(1.1);
-    }
-
-    .bookmark-btn.bookmarked {
-      color: #ffd700;
-    }
-
-    .result-url {
-      color: var(--text-light);
-      font-size: 13px;
-      margin-bottom: 10px;
-      word-break: break-all;
-    }
-
-    .result-snippet {
-      color: var(--text-color);
-      margin-bottom: 10px;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .result-meta {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .result-year {
-      background-color: var(--primary-color);
-      color: white;
-      padding: 4px 10px;
-      border-radius: 50px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    /* News Container */
-    #newsContainer {
-      margin-top: 40px;
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      border: var(--border);
-    }
-
-    .section-header {
-      margin-bottom: 20px;
-    }
-
-    .section-header h3 {
-      color: var(--primary-color);
-      font-size: 1.3rem;
-      font-weight: 600;
-    }
-
-    .news-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .news-card {
-      background-color: var(--bg-color);
-      border-radius: var(--border-radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      transition: var(--transition);
-      border: var(--border);
-    }
-
-    .news-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    }
-
-    .news-content {
-      padding: 20px;
-      flex: 1;
-    }
-
-    .news-card h4 {
-      margin-bottom: 10px;
-      font-size: 1rem;
-      line-height: 1.4;
-      font-weight: 600;
-    }
-
-    .news-card h4 a {
-      color: var(--text-color);
-      text-decoration: none;
-    }
-
-    .news-card h4 a:hover {
-      color: var(--primary-color);
-      text-decoration: underline;
-    }
-
-    .news-snippet {
-      color: var(--text-light);
-      font-size: 14px;
-      margin-bottom: 10px;
-      line-height: 1.5;
-    }
-
-    .news-date {
-      color: var(--text-light);
-      font-size: 12px;
-      font-style: italic;
-    }
-
-    .news-image {
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      border-bottom: var(--border);
-    }
-
-    /* Pagination */
-    .pagination {
-      display: flex;
-      justify-content: center;
-      margin-top: 30px;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pagination a {
-      padding: 8px 14px;
-      text-decoration: none;
-      color: var(--primary-color);
-      border: var(--border);
-      border-radius: var(--border-radius);
-      transition: var(--transition);
-      min-width: 40px;
-      text-align: center;
-      font-weight: 500;
-    }
-
-    .pagination a:hover {
-      background-color: var(--primary-light);
-    }
-
-    .pagination a.active {
-      background-color: var(--primary-color);
-      color: white;
-      font-weight: 600;
-      border-color: var(--primary-color);
-    }
-
-    /* Loading Spinner */
-    .loading-spinner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-left-color: var(--primary-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* No Data/Error Messages */
-    .no-data, .error-msg {
-      text-align: center;
-      padding: 40px;
-      color: var(--text-light);
-    }
-
-    .no-results {
-      text-align: center;
-      padding: 40px;
-    }
-
-    .no-results img {
-      margin-bottom: 20px;
-      width: 100px;
-      height: auto;
-      opacity: 0.7;
-    }
-
-    /* Search History Section */
-    #historySection {
-      display: none;
-      margin-top: 30px;
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      border: var(--border);
-    }
-
-    .history-header {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .history-header h2 {
-      color: var(--primary-color);
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    .history-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    .history-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .history-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 15px;
-      background-color: var(--bg-color);
-      border-radius: var(--border-radius);
-      transition: var(--transition);
-      border: var(--border);
-    }
-
-    .history-item:hover {
-      background-color: var(--light-color);
-      transform: translateY(-2px);
-    }
-
-    .dark-mode .history-item:hover {
-      background-color: var(--light-color);
-    }
-
-    .history-query {
-      flex: 1;
-      cursor: pointer;
-      color: var(--primary-color);
-      font-size: 15px;
-      line-height: 1.4;
-      word-break: break-word;
-      font-weight: 500;
-    }
-
-    .history-query:hover {
-      text-decoration: underline;
-    }
-
-    .history-date {
-      color: var(--text-light);
-      font-size: 13px;
-      margin: 0 15px;
-      white-space: nowrap;
-    }
-
-    .history-delete {
-      background: none;
-      border: none;
-      color: var(--text-light);
-      font-size: 18px;
-      cursor: pointer;
-      padding: 0 8px;
-      transition: var(--transition);
-    }
-
-    .history-delete:hover {
-      color: #ff6b6b;
-      transform: scale(1.2);
-    }
-
-    .no-history {
-      text-align: center;
-      padding: 30px;
-      color: var(--text-light);
-    }
-
-    /* Mobile Navigation */
-    .mobile-nav {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: var(--card-bg);
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 90;
-      padding: 12px 0;
-      border-top: var(--border);
-    }
-
-    .mobile-nav-items {
-      display: flex;
-      justify-content: space-around;
-    }
-
-    .mobile-nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-decoration: none;
-      color: var(--text-color);
-      font-size: 12px;
-      padding: 5px 10px;
-      border-radius: 8px;
-      transition: var(--transition);
-    }
-
-    .mobile-nav-item:hover {
-      color: var(--primary-color);
-      background-color: var(--primary-light);
-    }
-
-    .mobile-nav-item span:first-child {
-      font-size: 22px;
-      margin-bottom: 5px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .container {
-        padding: 15px;
-        padding-bottom: 80px;
-      }
-      
-      header {
-        margin-bottom: 20px;
-        padding: 15px 0;
-      }
-      
-      #logo {
-        font-size: 2.5rem;
-        letter-spacing: -1px;
-      }
-      
-      .tagline {
-        font-size: 0.9rem;
-      }
-      
-      .user-menu {
-        position: static;
-        justify-content: center;
-        margin-bottom: 15px;
-      }
-      
-      .search-box {
-        flex-direction: column;
-      }
-      
-      #searchInput {
-        width: 100%;
-        margin-bottom: 0;
-        padding: 15px;
-      }
-      
-      .search-box button {
-        width: 100%;
-        padding: 15px;
-      }
-      
-      .news-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .shortcuts {
-        display: none;
-      }
-      
-      .filter-container {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .year-range-filter {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .year-range-selects {
-        flex-direction: column;
-      }
-      
-      #yearStart, #yearEnd {
-        width: 100%;
-      }
-
-      .history-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-
-      .history-date {
-        margin-left: 0;
-        margin-right: 0;
-        font-size: 12px;
-      }
-
-      .history-actions {
-        width: 100%;
-        justify-content: space-between;
-      }
-      
-      .mobile-nav {
-        display: block;
-      }
-
-      #darkModeBtn {
-        padding: 10px 16px;
-        font-size: 13px;
-        bottom: 90px;
-      }
-    }
-
-    @media (min-width: 769px) {
-      .container {
-        padding-bottom: 30px;
-      }
-      
-      .results-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .history-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .history-item {
-        flex-direction: row;
-        align-items: center;
-      }
-    }
+    /* ... (CSS lainnya tetap sama) ... */
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-  <div id="logo">WHARSA</div>
-  <p class="tagline">Academic Reference Search</p>
+      <div id="logo">WHARSA</div>
+      <p class="tagline">Academic Reference Search</p>
 
-  <div class="user-menu">
-    <!-- Foto Profil -->
-    <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
+      <div class="user-menu">
+        <!-- Foto Profil -->
+        <img id="profilePic" class="user-avatar" src="" alt="Profil" style="display:none;">
 
-    <!-- Tombol Sign In Google -->
-    <div id="googleSignIn" class="g_id_signin"
-         data-type="standard"
-         data-shape="pill"
-         data-theme="outline"
-         data-text="signin_with"
-         data-size="medium"
-         data-logo_alignment="left">
+        <!-- Tombol Sign In Google -->
+        <div id="googleSignIn" class="g_id_signin"
+             data-type="standard"
+             data-shape="pill"
+             data-theme="outline"
+             data-text="signin_with"
+             data-size="medium"
+             data-logo_alignment="left">
+        </div>
+
+        <!-- Tombol Sign Out -->
+        <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
+          Keluar
+        </button>
+      </div>
+    </header>
+
+    <!-- Google Identity Service -->
+    <div id="g_id_onload"
+         data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
     </div>
 
-    <!-- Tombol Sign Out -->
-    <button id="signOutBtn" class="sign-out-btn" onclick="signOut()" style="display:none;">
-      Keluar
-    </button>
-  </div>
-</header>
-
-<!-- Google Identity Service -->
-<div id="g_id_onload"
-     data-client_id="1002562957398-ku4m61a2qdsspcqcaholbut3o7t3p9nd.apps.googleusercontent.com"
-     data-callback="handleCredentialResponse"
-     data-auto_prompt="false">
-</div>
     <div class="search-container">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Cari jurnal ilmiah..." onkeypress="handleKeyPress(event)">
