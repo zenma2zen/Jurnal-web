@@ -274,7 +274,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
     import { 
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut,onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
@@ -400,28 +400,28 @@
     }
 
     onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      const authStatusDiv = document.getElementById('authStatus');
-      const userInfoDiv = document.getElementById('userInfo');
-      const loginButton = document.getElementById('loginButton');
-      const userAvatar = document.getElementById('userAvatar');
-      const userName = document.getElementById('userName').textContent = (u.displayName || u.email).split(" ")[0];
+  currentUser = user;
+  const authStatusDiv = document.getElementById('authStatus');
+  const userInfoDiv = document.getElementById('userInfo');
+  const loginButton = document.getElementById('loginButton');
+  const userAvatar = document.getElementById('userAvatar');
+  const userNameEl = document.getElementById('userName');
 
+  if (user) {
+    // Ambil kata pertama dari displayName atau email
+    const displayName = (user.displayName || user.email || "").split(" ")[0];
+    userNameEl.textContent = displayName;
 
-      if (user) {
-        authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
-        userInfoDiv.style.display = 'flex';
-        loginButton.style.display = 'none';
-        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
-        userName.textContent = user.displayName || user.email;
-      } else {
-        authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
-        userInfoDiv.style.display = 'none';
-        loginButton.style.display = 'block';
-      }
-    });
-
-    document.addEventListener('DOMContentLoaded', () => { loadNews(); });
+    authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
+    userInfoDiv.style.display = 'flex';
+    loginButton.style.display = 'none';
+    userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+  } else {
+    authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
+    userInfoDiv.style.display = 'none';
+    loginButton.style.display = 'block';
+  }
+});
   </script>
 </body>
 </html>
