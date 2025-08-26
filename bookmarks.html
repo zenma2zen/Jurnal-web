@@ -297,6 +297,9 @@
           <button onclick="logout()">Logout</button>
         </div>
       </div>
+      <div>
+        <a href="index.html" class="btn">🏠 Kembali ke Pencarian</a>
+      </div>
     </div>
 
     <div id="messageBox" class="message-box"></div>
@@ -365,15 +368,15 @@
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    // Konfigurasi Firebase
+    // Konfigurasi Firebase Anda
     const firebaseConfig = {
       apiKey: "AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",
       authDomain: "wharsa-20c0d.firebaseapp.com",
       projectId: "wharsa-20c0d",
-      storageBucket: "wharsa-20c0d.appspot.com",
+      storageBucket: "wharsa-20c0d.firebasestorage.app",
       messagingSenderId: "481228042342",
-      appId: "1:481228042342:web:2d70caec67ad790161fda7",
-      measurementId: "G-CLSFRMMRMQ"
+      appId: "1:481228042342:web:28318053709e75e761fda7",
+      measurementId: "G-0F72WZQLW5"
     };
 
     // Inisialisasi Firebase
@@ -403,7 +406,7 @@
       try {
         await signInWithPopup(auth, provider);
         showMessage('Login berhasil!');
-        initApp();
+        // initApp() akan dipanggil oleh onAuthStateChanged
       } catch (error) {
         console.error('Error signing in:', error);
         showMessage('Login gagal: ' + error.message, 'error');
@@ -416,7 +419,7 @@
         await signOut(auth);
         showMessage('Logout berhasil');
         if (unsubscribeBookmarks) {
-          unsubscribeBookmarks();
+          unsubscribeBookmarks(); // Hentikan mendengarkan perubahan bookmark
         }
         document.getElementById('authContainer').style.display = 'block';
         document.getElementById('appContainer').style.display = 'none';
@@ -435,8 +438,8 @@
         document.getElementById('authContainer').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
         document.getElementById('userInfo').style.display = 'flex';
-        document.getElementById('userAvatar').src = user.photoURL;
-        document.getElementById('userName').textContent = user.displayName;
+        document.getElementById('userAvatar').src = user.photoURL || 'https://via.placeholder.com/40'; // Placeholder jika tidak ada foto
+        document.getElementById('userName').textContent = user.displayName || user.email;
         document.getElementById('authStatus').innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
         
         // Load bookmarks dari Firestore
@@ -474,7 +477,10 @@
     // Menambahkan bookmark baru
     window.addBookmark = async function() {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        showMessage('Anda harus login untuk menambahkan bookmark.', 'error');
+        return;
+      }
       
       const title = document.getElementById('bookmarkTitle').value.trim();
       const url = document.getElementById('bookmarkUrl').value.trim();
@@ -531,18 +537,16 @@
         .map(t => t.trim())
         .filter(t => t.length > 0);
       
-      if (tags.length > 0) {
-        try {
-          const bookmarkRef = doc(db, 'bookmarks', bookmarkId);
-          await updateDoc(bookmarkRef, {
-            tags: tags,
-            updatedAt: serverTimestamp()
-          });
-          showMessage('Tag berhasil diperbarui');
-        } catch (error) {
-          console.error('Error updating bookmark:', error);
-          showMessage('Gagal memperbarui tag: ' + error.message, 'error');
-        }
+      try {
+        const bookmarkRef = doc(db, 'bookmarks', bookmarkId);
+        await updateDoc(bookmarkRef, {
+          tags: tags,
+          updatedAt: serverTimestamp()
+        });
+        showMessage('Tag berhasil diperbarui');
+      } catch (error) {
+        console.error('Error updating bookmark:', error);
+        showMessage('Gagal memperbarui tag: ' + error.message, 'error');
       }
     };
 
@@ -591,9 +595,15 @@
         empty.style.display = "block";
         if (userBookmarks.length > 0) {
           empty.innerHTML = `
-            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYWFhIiBzdHJva2Utd2lkdGg�IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDIxSDNsNC00SDNhMSAxIDAgMCAxLTEtMVY0YTEgMSAwIDAgMSAxLTFoMTZhMSAxIDAgMCAxIDEgMXYxNmExIDEgMCAwIDEtMSAxem0wIDBhMSAxIDAgMCAwIDEtMUg3bDQgNHYtM2EzIDMgMCAwIDEgMy0zaDdhMSAxIDAgMCAwIDEtMXYtN2ExIDEgMCAwIDAtMS0xSDNhMSAxIDAgMCAwLTEgMXYxMWExIDEgMCAwIDAgMSAxaDEiPjwvcGF0aD48L3N2Zz4=" alt="No results">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYWFhIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDIxSDNsNC00SDNhMSAxIDAgMCAxLTEtMVY0YTEgMSAwIDAgMSAxLTFoMTZhMSAxIDAgMCAxIDEgMXYxNmExIDEgMCAwIDEtMSAxem0wIDBhMSAxIDAgMCAwIDEtMUg3bDQgNHYtM2EzIDMgMCAwIDEgMy0zaDdhMSAxIDAgMCAwIDEtMXYtN2ExIDEgMCAwIDAtMS0xSDNhMSAxIDAgMCAwLTEgMXYxMWExIDEgMCAwIDAgMSAxaDEiPjwvcGF0aD48L3N2Zz4=" alt="No results">
             <h3>Tidak ada bookmark yang cocok</h3>
             <p>Coba gunakan kata kunci atau filter yang berbeda</p>
+          `;
+        } else {
+             empty.innerHTML = `
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYWFhIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE5IDIxSDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJoMTFhMSAxIDAgMCAxIDEgMXYxNGExIDEgMCAwIDEtMSAxem0wIDBhMSAxIDAgMCAwIDEtMVY3YS41LjUgMCAwIDAtLjUtLjVINWEyIDIgMCAwIDAtMiAydjE0YTIgMiAwIDAgMCAyIDJ6Ij48L3BhdGg+PHBvbHlsaW5lIHBvaW50cz0iMTAgOCAxNCAxMiAxMCAxNiI+PC9wb2x5bGluZT48L3N2Zz4=" alt="No bookmarks">
+            <h3>Belum ada bookmark</h3>
+            <p>Klik tombol "Tambah Bookmark" untuk menambahkan bookmark pertama Anda.</p>
           `;
         }
         return;
@@ -647,6 +657,12 @@
     onAuthStateChanged(auth, (user) => {
       if (user) {
         initApp();
+      } else {
+        // Jika tidak login, tampilkan kontainer login dan sembunyikan aplikasi
+        document.getElementById('authContainer').style.display = 'block';
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('authStatus').innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
       }
     });
   </script>
