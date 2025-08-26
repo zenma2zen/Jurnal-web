@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WHARSA - Wahasa Academic Reference Search Assistant</title>
+  <title>WHARSA : Wahasa Academic Reference Search Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>
+   <style>
     :root {
       --primary: #1e90ff;
       --bg: #f9f9fb;
@@ -14,92 +14,403 @@
       --border: #e5e5e5;
       --shadow: rgba(0, 0, 0, 0.05);
     }
-    *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
-    body{background:var(--bg);color:var(--text);padding:20px;}
-    .container{max-width:1000px;margin:auto;}
-    .topbar{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);padding:15px 25px;border-radius:20px;box-shadow:0 4px 12px var(--shadow);margin-bottom:25px;flex-wrap:wrap;gap:10px;}
-    h1{font-size:1.2rem;font-weight:600;}
-    .btn,button{padding:8px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);color:var(--text);cursor:pointer;font-size:0.9rem;transition:.2s;}
-    .btn:hover,button:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 0 10px rgba(30,144,255,0.3);}
-    .primary{background:var(--primary);color:#fff;border:none;}
-    .primary:hover{background:#0f75d3;box-shadow:0 0 12px rgba(30,144,255,0.5);}
-    .controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px;}
-    .controls input{padding:10px 14px;border:1px solid var(--border);border-radius:12px;flex:1;background:#fff;}
-    .shortcut-section{display:flex;justify-content:center;gap:12px;margin:20px 0 30px;flex-wrap:wrap;}
-    .shortcut-section .btn{min-width:160px;text-align:center;font-weight:500;}
-    .search-results,.news-section{margin-top:30px;}
-    .result-card{background:var(--card-bg);border-radius:16px;padding:18px;box-shadow:0 4px 12px var(--shadow);margin-bottom:15px;}
-    .result-card .title a{font-size:1.1rem;font-weight:600;color:var(--text);text-decoration:none;}
-    .snippet{font-size:0.9rem;color:#666;margin-top:6px;}
-    .pagination{display:flex;gap:8px;justify-content:center;margin-top:20px;}
-    .pagination a{padding:6px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;text-decoration:none;color:var(--text);}
-    .pagination a.active{background:var(--primary);color:#fff;}
-    .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;}
-    .news-card{background:var(--card-bg);border-radius:16px;overflow:hidden;box-shadow:0 4px 12px var(--shadow);display:flex;flex-direction:column;transition:transform .2s;}
-    .news-card:hover{transform:translateY(-4px);}
-    .news-card .thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:#eee;}
-    .news-card .news-title{padding:12px 14px 4px;}
-    .news-card .news-snippet{padding:0 14px 14px;font-size:0.9rem;color:#555;}
-    .user-info{display:flex;align-items:center;gap:10px;}
-    .user-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;}
-    @media(max-width:768px){
-      .controls{flex-direction:column;}
-      .controls input,.controls button{width:100%;}
-      .shortcut-section{flex-direction:column;}
-      .shortcut-section .btn{width:100%;}
-      .news-grid{grid-template-columns:1fr;}
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
     }
-  </style>
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      padding: 15px 25px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px var(--shadow);
+      margin-bottom: 25px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .btn, button {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover, button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 0 10px rgba(30,144,255,0.3);
+    }
+
+    .primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+    }
+
+    .primary:hover {
+      background: #0f75d3;
+      box-shadow: 0 0 12px rgba(30,144,255,0.5);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .controls input {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      flex: 1;
+      background: #fff;
+    }
+
+    .shortcut-section {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0 30px;
+    }
+
+    .shortcut-section .btn {
+      min-width: 160px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .search-results, .news-section {
+      margin-top: 30px;
+    }
+
+    .result-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 4px 12px var(--shadow);
+      margin-bottom: 15px;
+    }
+
+    .result-card .title a {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .snippet {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .pagination a {
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .pagination a.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .news-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 12px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s ease;
+    }
+
+    .news-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .news-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .news-title a {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .news-snippet {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .message-box {
+      margin: 15px 0;
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .success-box { background: #e3fcef; color: #006644; }
+    .error-box { background: #ffecec; color: #cc0000; }
+  .user-info {display:flex;align-items:center;gap:10px;}
+.user-avatar {width:40px;height:40px;border-radius:50%;object-fit:cover;}
+</style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
       <div>
         <h1>🔍 WHARSA : Wahasa Academic Reference Search Assistant</h1>
-        <div id="authStatus" class="auth-status"><span>Status: Belum login</span></div>
-      </div>
-      <div class="auth-buttons">
-        <div id="userInfo" class="user-info" style="display:none;">
-          <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
-          <div><div id="userName"></div><button onclick="logout()">Logout</button></div>
+        <div id="authStatus" class="auth-status">
+          <span class="offline-dot"></span>
+          <span>Status: Belum login</span>
         </div>
-        <button id="loginButton" onclick="loginWithGoogle()" class="primary" style="display:none;">Login dengan Google</button>
+      </div>
+
+      <div class="auth-buttons">
+        <div id="userInfo" class="user-info" style="display: none;">
+          <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+          <div>
+            <div id="userName"></div>
+            <button onclick="logout()">Logout</button>
+          </div>
+        </div>
+        <button id="loginButton" onclick="loginWithGoogle()" class="primary" style="display: none;">Login dengan Google</button>
       </div>
     </div>
+
+    <div id="messageBox" class="message-box"></div>
+
     <div class="controls">
       <input type="text" id="searchQuery" placeholder="Cari jurnal atau artikel...">
-      <input type="number" id="startYear" placeholder="Tahun Mulai (Opsional)">
-      <input type="number" id="endYear" placeholder="Tahun Akhir (Opsional)">
+      <input type="number" id="startYear" placeholder="Tahun Mulai (Opsional)" min="1900" max="2099">
+      <input type="number" id="endYear" placeholder="Tahun Akhir (Opsional)" min="1900" max="2099">
       <button onclick="performSearch(1)" class="primary">Cari</button>
     </div>
+
+    <!-- Shortcut Buttons Section -->
     <div class="shortcut-section">
       <a href="https://www.example.com/sekolah" target="_blank" class="btn">🏫 Web Sekolah</a>
       <a href="https://www.example.com/perpustakaan" target="_blank" class="btn">📚 Perpustakaan Sekolah</a>
       <a href="bookmarks.html" class="btn">🔖 Lihat Bookmark Saya</a>
     </div>
+
     <div id="searchResults" class="search-results">
       <h2>Hasil Pencarian</h2>
-      <div id="resultsList"><p>Masukkan kata kunci untuk memulai pencarian.</p></div>
-      <div id="paginationControls" class="pagination" style="display:none;"></div>
+      <div id="resultsList">
+        <p>Masukkan kata kunci untuk memulai pencarian.</p>
+      </div>
+      <div id="paginationControls" class="pagination" style="display: none;"></div>
     </div>
+
     <div class="news-section">
       <h2>Berita Internasional Terbaru</h2>
-      <div id="newsList" class="news-grid"><p>Memuat berita...</p></div>
+      <div id="newsList" class="news-grid">
+        <p>Memuat berita...</p>
+      </div>
     </div>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-    import { getAuth,signInWithPopup,GoogleAuthProvider,signOut,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    const firebaseConfig={apiKey:"AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",authDomain:"wharsa-20c0d.firebaseapp.com",projectId:"wharsa-20c0d",storageBucket:"wharsa-20c0d.firebasestorage.app",messagingSenderId:"481228042342",appId:"1:481228042342:web:28318053709e75e761fda7",measurementId:"G-0F72WZQLW5"};
-    const app=initializeApp(firebaseConfig);getAnalytics(app);const auth=getAuth(app);
-    const NEWS_URL="https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
-    function showMessage(m,t='success'){console.log(m);}
-    window.loginWithGoogle=async function(){const p=new GoogleAuthProvider();await signInWithPopup(auth,p);}
-    window.logout=async function(){await signOut(auth);}
-    async function loadNews(){const list=document.getElementById('newsList');list.innerHTML='<p>Memuat berita...</p>';try{const r=await fetch(NEWS_URL);const d=await r.json();list.innerHTML='';if(d.data){d.data.slice(0,6).forEach(n=>{const c=document.createElement('div');c.className='news-card';const img=n.image||n.thumbnail||"";c.innerHTML=`${img?`<img src="${img}" class="thumb">`:""}<div class="news-title"><a href="${n.link}" target="_blank">${n.title}</a></div><div class="news-snippet">${n.contentSnippet||n.description||''}</div>`;list.appendChild(c);});}}catch(e){list.innerHTML='<p>Gagal memuat berita.</p>';}}
-    onAuthStateChanged(auth,u=>{document.getElementById('authStatus').innerHTML=u?`Status: Login sebagai ${u.email}`:'Status: Belum login';document.getElementById('userInfo').style.display=u?'flex':'none';document.getElementById('loginButton').style.display=u?'none':'block';if(u){document.getElementById('userAvatar').src=u.photoURL||'https://via.placeholder.com/40';const name=(u.displayName||u.email).split(" ")[0];document.getElementById('userName').textContent=name;}});
-    document.addEventListener('DOMContentLoaded',loadNews);
+    import { 
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",
+      authDomain: "wharsa-20c0d.firebaseapp.com",
+      projectId: "wharsa-20c0d",
+      storageBucket: "wharsa-20c0d.firebasestorage.app",
+      messagingSenderId: "481228042342",
+      appId: "1:481228042342:web:28318053709e75e761fda7",
+      measurementId: "G-0F72WZQLW5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const GOOGLE_CSE_API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
+    const GOOGLE_CSE_CX = "332c680f2381f4787";
+    const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
+
+    let currentUser = null;
+    let currentPage = 1;
+    let totalResults = 0;
+    let resultsPerPage = 10;
+
+    function showMessage(message, type = 'success') {
+      const messageBox = document.getElementById('messageBox');
+      messageBox.textContent = message;
+      messageBox.className = `message-box ${type}-box`;
+      messageBox.style.display = 'block';
+      setTimeout(() => { messageBox.style.display = 'none'; }, 5000);
+    }
+
+    window.loginWithGoogle = async function() {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+        showMessage('Login berhasil!');
+      } catch (error) {
+        showMessage('Login gagal: ' + error.message, 'error');
+      }
+    };
+
+    window.logout = async function() {
+      try {
+        await signOut(auth);
+        showMessage('Logout berhasil');
+      } catch (error) {
+        showMessage('Logout gagal: ' + error.message, 'error');
+      }
+    };
+
+    window.performSearch = async function(page = 1) {
+      const query = document.getElementById('searchQuery').value.trim();
+      const startYear = document.getElementById('startYear').value.trim();
+      const endYear = document.getElementById('endYear').value.trim();
+      const resultsList = document.getElementById('resultsList');
+
+      currentPage = page;
+      resultsList.innerHTML = '<p>Mencari...</p>';
+      document.getElementById('paginationControls').style.display = 'none';
+
+      if (!query) {
+        resultsList.innerHTML = '<p>Masukkan kata kunci untuk memulai pencarian.</p>';
+        return;
+      }
+
+      const startIndex = (page - 1) * resultsPerPage + 1;
+      let searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_CSE_API_KEY}&cx=${GOOGLE_CSE_CX}&q=${encodeURIComponent(query)}&start=${startIndex}`;
+      if (startYear && endYear) searchUrl += `&sort=date:r:${startYear}0101:${endYear}1231`;
+
+      try {
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+        resultsList.innerHTML = '';
+        if (data.items && data.items.length > 0) {
+          totalResults = parseInt(data.searchInformation.totalResults) || 0;
+          data.items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+              <div class="title"><a href="${item.link}" target="_blank">${item.title}</a></div>
+              <div class="url">${item.displayLink}</div>
+              <div class="snippet">${item.snippet}</div>
+            `;
+            resultsList.appendChild(card);
+          });
+        } else {
+          resultsList.innerHTML = '<p>Tidak ada hasil.</p>';
+        }
+      } catch (error) {
+        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan.</p>';
+      }
+    };
+
+    async function loadNews() {
+      const newsList = document.getElementById('newsList');
+      newsList.innerHTML = '<p>Memuat berita...</p>';
+      try {
+        const response = await fetch(NEWS_URL);
+        const data = await response.json();
+        newsList.innerHTML = '';
+        if (data.data && data.data.length > 0) {
+          data.data.slice(0, 6).forEach(newsItem => {
+            const card = document.createElement('div');
+            card.className = 'news-card';
+            const imgUrl = newsItem.image || newsItem.thumbnail || "";
+            card.innerHTML = `
+              ${imgUrl ? `<img src="${imgUrl}" alt="Thumbnail">` : ""}
+              <div class="news-title"><a href="${newsItem.link}" target="_blank">${newsItem.title}</a></div>
+              <div class="news-snippet">${newsItem.contentSnippet || newsItem.description || ''}</div>
+            `;
+            newsList.appendChild(card);
+          });
+        } else {
+          newsList.innerHTML = '<p>Tidak ada berita.</p>';
+        }
+      } catch (error) {
+        newsList.innerHTML = '<p class="error-box">Gagal memuat berita.</p>';
+      }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      const authStatusDiv = document.getElementById('authStatus');
+      const userInfoDiv = document.getElementById('userInfo');
+      const loginButton = document.getElementById('loginButton');
+      const userAvatar = document.getElementById('userAvatar');
+      const userName = document.getElementById('userName');
+
+      if (user) {
+        authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
+        userInfoDiv.style.display = 'flex';
+        loginButton.style.display = 'none';
+        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+        userName.textContent = user.displayName || user.email;
+      } else {
+        authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
+        userInfoDiv.style.display = 'none';
+        loginButton.style.display = 'block';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { loadNews(); });
   </script>
 </body>
 </html>
