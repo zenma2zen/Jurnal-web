@@ -5,32 +5,202 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WHARSA - Jurnal & Berita</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>
-    /* CSS styles tetap sama seperti sebelumnya */
-    /* ... (CSS code dari file awal) ... */
-    
-    /* Tambahan style untuk admin info */
-    .admin-info {
-      background: #fff3cd;
-      border-left: 4px solid #ffc107;
-      color: #856404;
-      padding: 12px 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-      font-size: 0.9em;
+   <style>
+    :root {
+      --primary: #1e90ff;
+      --bg: #f9f9fb;
+      --text: #1a1a1a;
+      --card-bg: #ffffff;
+      --border: #e5e5e5;
+      --shadow: rgba(0, 0, 0, 0.05);
     }
-    
-    .admin-info h4 {
-      margin: 0 0 8px 0;
-      color: #856404;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
     }
-    
-    .admin-info code {
-      background: #f8f9fa;
-      padding: 2px 5px;
-      border-radius: 3px;
-      font-family: monospace;
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
     }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      padding: 15px 25px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px var(--shadow);
+      margin-bottom: 25px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .btn, button {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover, button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 0 10px rgba(30,144,255,0.3);
+    }
+
+    .primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+    }
+
+    .primary:hover {
+      background: #0f75d3;
+      box-shadow: 0 0 12px rgba(30,144,255,0.5);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .controls input {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      flex: 1;
+      background: #fff;
+    }
+
+    .shortcut-section {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0 30px;
+    }
+
+    .shortcut-section .btn {
+      min-width: 160px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .search-results, .news-section {
+      margin-top: 30px;
+    }
+
+    .result-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 4px 12px var(--shadow);
+      margin-bottom: 15px;
+    }
+
+    .result-card .title a {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .snippet {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .pagination a {
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .pagination a.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .news-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 12px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s ease;
+    }
+
+    .news-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .news-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .news-title a {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .news-snippet {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .message-box {
+      margin: 15px 0;
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .success-box { background: #e3fcef; color: #006644; }
+    .error-box { background: #ffecec; color: #cc0000; }
   </style>
 </head>
 <body>
@@ -53,34 +223,10 @@
           </div>
         </div>
         <button id="loginButton" onclick="loginWithGoogle()" class="primary" style="display: none;">Login dengan Google</button>
-        <a href="bookmarks.html" class="btn">🔖 Lihat Bookmark Saya</a>
       </div>
     </div>
 
     <div id="messageBox" class="message-box"></div>
-    
-    <!-- Info untuk admin -->
-    <div id="adminInfo" class="admin-info" style="display: none;">
-      <h4>⚠️ Perhatian: Masalah Konfigurasi Database</h4>
-      <p>Anda mengalami error permission karena aturan keamanan Firestore belum dikonfigurasi dengan benar.</p>
-      <p>Silakan buka Firebase Console &gt; Firestore Database &gt; Rules dan terapkan aturan berikut:</p>
-      <code>
-        rules_version = '2';<br>
-        service cloud.firestore {<br>
-        &nbsp; match /databases/{database}/documents {<br>
-        &nbsp; &nbsp; match /bookmarks/{bookmarkId} {<br>
-        &nbsp; &nbsp; &nbsp; allow read, write: if request.auth != null;<br>
-        &nbsp; &nbsp; }<br>
-        &nbsp; }<br>
-        }
-      </code>
-    </div>
-
-    <!-- Shortcut Buttons Section -->
-    <div class="shortcut-section">
-        <a href="https://www.example.com/sekolah" target="_blank" class="btn">🏫 Web Sekolah</a>
-        <a href="https://www.example.com/perpustakaan" target="_blank" class="btn">📚 Perpustakaan Sekolah</a>
-    </div>
 
     <div class="controls">
       <input type="text" id="searchQuery" placeholder="Cari jurnal atau artikel...">
@@ -89,16 +235,19 @@
       <button onclick="performSearch(1)" class="primary">Cari</button>
     </div>
 
+    <!-- Shortcut Buttons Section -->
+    <div class="shortcut-section">
+      <a href="https://www.example.com/sekolah" target="_blank" class="btn">🏫 Web Sekolah</a>
+      <a href="https://www.example.com/perpustakaan" target="_blank" class="btn">📚 Perpustakaan Sekolah</a>
+      <a href="bookmarks.html" class="btn">🔖 Lihat Bookmark Saya</a>
+    </div>
+
     <div id="searchResults" class="search-results">
       <h2>Hasil Pencarian</h2>
       <div id="resultsList">
         <p>Masukkan kata kunci untuk memulai pencarian.</p>
       </div>
-      
-      <!-- Pagination controls -->
-      <div id="paginationControls" class="pagination" style="display: none;">
-        <!-- Pagination will be generated here dynamically -->
-      </div>
+      <div id="paginationControls" class="pagination" style="display: none;"></div>
     </div>
 
     <div class="news-section">
@@ -113,22 +262,10 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
     import { 
-      getAuth, 
-      signInWithPopup, 
-      GoogleAuthProvider, 
-      signOut,
-      onAuthStateChanged 
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      addDoc, 
-      serverTimestamp,
-      doc,
-      setDoc 
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",
       authDomain: "wharsa-20c0d.firebaseapp.com",
@@ -139,13 +276,11 @@
       measurementId: "G-0F72WZQLW5"
     };
 
-    // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Konstanta untuk Google CSE dan Berita
     const GOOGLE_CSE_API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
     const GOOGLE_CSE_CX = "332c680f2381f4787";
     const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
@@ -154,164 +289,41 @@
     let currentPage = 1;
     let totalResults = 0;
     let resultsPerPage = 10;
-    let currentQuery = "";
-    let currentStartYear = "";
-    let currentEndYear = "";
 
-    // Fungsi untuk menampilkan pesan
     function showMessage(message, type = 'success') {
       const messageBox = document.getElementById('messageBox');
       messageBox.textContent = message;
       messageBox.className = `message-box ${type}-box`;
       messageBox.style.display = 'block';
-      
-      // Tampilkan info admin untuk error permission
-      if (message.includes('permissions') || message.includes('izin')) {
-        document.getElementById('adminInfo').style.display = 'block';
-      }
-      
-      setTimeout(() => {
-        messageBox.style.display = 'none';
-      }, 5000);
+      setTimeout(() => { messageBox.style.display = 'none'; }, 5000);
     }
 
-    // Login dengan Google
     window.loginWithGoogle = async function() {
       const provider = new GoogleAuthProvider();
       try {
         await signInWithPopup(auth, provider);
         showMessage('Login berhasil!');
       } catch (error) {
-        console.error('Error signing in:', error);
         showMessage('Login gagal: ' + error.message, 'error');
       }
     };
 
-    // Logout
     window.logout = async function() {
       try {
         await signOut(auth);
         showMessage('Logout berhasil');
       } catch (error) {
-        console.error('Error signing out:', error);
         showMessage('Logout gagal: ' + error.message, 'error');
       }
     };
 
-    // Menambahkan bookmark baru dari hasil pencarian
-    window.addBookmarkFromSearch = async function(title, url) {
-      if (!currentUser) {
-        showMessage('Anda harus login untuk menyimpan bookmark.', 'error');
-        if (confirm('Anda belum login. Apakah Anda ingin login dengan Google sekarang?')) {
-          loginWithGoogle();
-        }
-        return;
-      }
-      
-      // Validasi URL
-      try {
-        new URL(url);
-      } catch (e) {
-        showMessage('URL tidak valid', 'error');
-        return;
-      }
-      
-      try {
-        // Gunakan UID pengguna sebagai bagian dari ID dokumen untuk memudahkan query
-        const bookmarkId = `${currentUser.uid}_${Date.now()}`;
-        const bookmarkRef = doc(db, 'bookmarks', bookmarkId);
-        
-        await setDoc(bookmarkRef, {
-          title: title,
-          url: url,
-          tags: ['jurnal', 'pencarian'],
-          userId: currentUser.uid,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-        
-        showMessage('Bookmark berhasil ditambahkan!');
-      } catch (error) {
-        console.error('Error adding bookmark:', error);
-        
-        // Berikan pesan error yang lebih spesifik
-        if (error.code === 'permission-denied') {
-          showMessage('Error: Izin ditolak. Silakan konfigurasi aturan keamanan Firestore.', 'error');
-        } else {
-          showMessage('Gagal menambahkan bookmark: ' + error.message, 'error');
-        }
-      }
-    };
-
-    // Fungsi untuk menghasilkan kontrol pagination
-    function generatePaginationControls(currentPage, totalResults, resultsPerPage) {
-      const totalPages = Math.ceil(totalResults / resultsPerPage);
-      const paginationContainer = document.getElementById('paginationControls');
-      
-      if (totalPages <= 1) {
-        paginationContainer.style.display = 'none';
-        return;
-      }
-      
-      paginationContainer.style.display = 'flex';
-      paginationContainer.innerHTML = '';
-      
-      // Tombol Previous
-      const prevButton = document.createElement('a');
-      prevButton.href = '#';
-      prevButton.innerHTML = '&laquo; Sebelumnya';
-      if (currentPage === 1) {
-        prevButton.className = 'disabled';
-      } else {
-        prevButton.onclick = () => goToPage(currentPage - 1);
-      }
-      paginationContainer.appendChild(prevButton);
-      
-      // Tampilkan beberapa halaman di sekitar halaman saat ini
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, startPage + 4);
-      
-      for (let i = startPage; i <= endPage; i++) {
-        const pageLink = document.createElement('a');
-        pageLink.href = '#';
-        pageLink.textContent = i;
-        if (i === currentPage) {
-          pageLink.className = 'active';
-        } else {
-          pageLink.onclick = () => goToPage(i);
-        }
-        paginationContainer.appendChild(pageLink);
-      }
-      
-      // Tombol Next
-      const nextButton = document.createElement('a');
-      nextButton.href = '#';
-      nextButton.innerHTML = 'Berikutnya &raquo;';
-      if (currentPage === totalPages) {
-        nextButton.className = 'disabled';
-      } else {
-        nextButton.onclick = () => goToPage(currentPage + 1);
-      }
-      paginationContainer.appendChild(nextButton);
-    }
-
-    // Fungsi untuk pergi ke halaman tertentu
-    window.goToPage = function(page) {
-      performSearch(page);
-    }
-
-    // Melakukan pencarian menggunakan Google Custom Search JSON API
     window.performSearch = async function(page = 1) {
       const query = document.getElementById('searchQuery').value.trim();
       const startYear = document.getElementById('startYear').value.trim();
       const endYear = document.getElementById('endYear').value.trim();
       const resultsList = document.getElementById('resultsList');
-      
+
       currentPage = page;
-      currentQuery = query;
-      currentStartYear = startYear;
-      currentEndYear = endYear;
-      
       resultsList.innerHTML = '<p>Mencari...</p>';
       document.getElementById('paginationControls').style.display = 'none';
 
@@ -321,26 +333,15 @@
       }
 
       const startIndex = (page - 1) * resultsPerPage + 1;
-      
       let searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_CSE_API_KEY}&cx=${GOOGLE_CSE_CX}&q=${encodeURIComponent(query)}&start=${startIndex}`;
-      
-      if (startYear && endYear) {
-          searchUrl += `&sort=date:r:${startYear}0101:${endYear}1231`;
-      } else if (startYear) {
-          searchUrl += `&sort=date:r:${startYear}0101:20991231`;
-      } else if (endYear) {
-          searchUrl += `&sort=date:r:19000101:${endYear}1231`;
-      }
+      if (startYear && endYear) searchUrl += `&sort=date:r:${startYear}0101:${endYear}1231`;
 
       try {
         const response = await fetch(searchUrl);
         const data = await response.json();
-
         resultsList.innerHTML = '';
-
         if (data.items && data.items.length > 0) {
           totalResults = parseInt(data.searchInformation.totalResults) || 0;
-          
           data.items.forEach(item => {
             const card = document.createElement('div');
             card.className = 'result-card';
@@ -348,55 +349,44 @@
               <div class="title"><a href="${item.link}" target="_blank">${item.title}</a></div>
               <div class="url">${item.displayLink}</div>
               <div class="snippet">${item.snippet}</div>
-              <div class="actions">
-                <button onclick="addBookmarkFromSearch('${item.title.replace(/'/g, "\\'")}', '${item.link.replace(/'/g, "\\'")}')" class="primary">🔖 Bookmark</button>
-              </div>
             `;
             resultsList.appendChild(card);
           });
-          
-          generatePaginationControls(currentPage, totalResults, resultsPerPage);
         } else {
-          resultsList.innerHTML = '<p>Tidak ada hasil yang ditemukan untuk pencarian Anda.</p>';
+          resultsList.innerHTML = '<p>Tidak ada hasil.</p>';
         }
       } catch (error) {
-        console.error('Error performing search:', error);
-        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan saat melakukan pencarian. Silakan coba lagi nanti.</p>';
-        showMessage('Gagal melakukan pencarian: ' + error.message, 'error');
+        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan.</p>';
       }
     };
 
-    // Memuat berita internasional
     async function loadNews() {
       const newsList = document.getElementById('newsList');
       newsList.innerHTML = '<p>Memuat berita...</p>';
       try {
         const response = await fetch(NEWS_URL);
         const data = await response.json();
-
         newsList.innerHTML = '';
-
         if (data.data && data.data.length > 0) {
           data.data.slice(0, 6).forEach(newsItem => {
             const card = document.createElement('div');
             card.className = 'news-card';
+            const imgUrl = newsItem.image || newsItem.thumbnail || "";
             card.innerHTML = `
+              ${imgUrl ? `<img src="${imgUrl}" alt="Thumbnail">` : ""}
               <div class="news-title"><a href="${newsItem.link}" target="_blank">${newsItem.title}</a></div>
               <div class="news-snippet">${newsItem.contentSnippet || newsItem.description || ''}</div>
             `;
             newsList.appendChild(card);
           });
         } else {
-          newsList.innerHTML = '<p>Tidak ada berita yang tersedia saat ini.</p>';
+          newsList.innerHTML = '<p>Tidak ada berita.</p>';
         }
       } catch (error) {
-        console.error('Error loading news:', error);
-        newsList.innerHTML = '<p class="error-box">Gagal memuat berita. Silakan coba lagi nanti.</p>';
-        showMessage('Gagal memuat berita: ' + error.message, 'error');
+        newsList.innerHTML = '<p class="error-box">Gagal memuat berita.</p>';
       }
     }
 
-    // Inisialisasi saat status otentikasi berubah
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       const authStatusDiv = document.getElementById('authStatus');
@@ -418,16 +408,7 @@
       }
     });
 
-    // Panggil fungsi saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', () => {
-      loadNews();
-      
-      document.getElementById('searchQuery').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          performSearch(1);
-        }
-      });
-    });
+    document.addEventListener('DOMContentLoaded', () => { loadNews(); });
   </script>
 </body>
 </html>
