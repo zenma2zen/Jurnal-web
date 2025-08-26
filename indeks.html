@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WHARSA : Wahasa Academic Reference Search Assistant</title>
+  <title>WHARSA - Jurnal & Berita</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
    <style>
     :root {
@@ -201,15 +201,25 @@
 
     .success-box { background: #e3fcef; color: #006644; }
     .error-box { background: #ffecec; color: #cc0000; }
-  .user-info {display:flex;align-items:center;gap:10px;}
-.user-avatar {width:40px;height:40px;border-radius:50%;object-fit:cover;}
-</style>
+
+    .user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+  </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
       <div>
-        <h1>🔍 WHARSA : Wahasa Academic Reference Search Assistant</h1>
+        <h1>🔍 WHARSA - Jurnal & Berita</h1>
         <div id="authStatus" class="auth-status">
           <span class="offline-dot"></span>
           <span>Status: Belum login</span>
@@ -395,7 +405,8 @@
       const userInfoDiv = document.getElementById('userInfo');
       const loginButton = document.getElementById('loginButton');
       const userAvatar = document.getElementById('userAvatar');
-      const userName = document.getElementById('userName');
+      const userName = document.getElementById('userName').textContent = (u.displayName || u.email).split(" ")[0];
+
 
       if (user) {
         authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
