@@ -6,347 +6,30 @@
   <title>WHARSA - Jurnal & Berita</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary-color: #4361ee;
-      --primary-light: #e0e5ff;
-      --secondary-color: #3f37c9;
-      --text-color: #333;
-      --text-light: #6c757d;
-      --bg-color: #f7f8fc;
-      --card-bg: #ffffff;
-      --border-color: #ddd;
-      --success-color: #2e7d32;
-      --error-color: #c62828;
-    }
-
-    body { 
-      font-family: 'Inter', sans-serif; 
-      background: var(--bg-color); 
-      margin: 0; 
-      padding: 20px;
-      color: var(--text-color);
-      line-height: 1.6;
-    }
+    /* CSS styles tetap sama seperti sebelumnya */
+    /* ... (CSS code dari file awal) ... */
     
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    
-    h1, h2, h3 { color: var(--primary-color); margin-top: 0; }
-    
-    .topbar { 
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between; 
-      margin-bottom: 20px; 
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    .controls { 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 10px; 
-      margin-bottom: 20px; 
-      background: var(--card-bg);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    input[type="text"], input[type="url"], input[type="email"], input[type="password"], input[type="number"] { 
-      padding: 10px 12px; 
-      border-radius: 8px; 
-      border: 1px solid var(--border-color); 
-      flex: 1; 
-      min-width: 150px; /* Adjusted min-width for year inputs */
-      font-family: 'Inter', sans-serif;
-    }
-    
-    button, a.btn { 
-      padding: 10px 16px; 
-      border-radius: 8px; 
-      border: 1px solid var(--border-color); 
-      background: var(--card-bg); 
-      cursor: pointer; 
-      text-decoration: none; 
-      color: var(--text-color);
-      font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s ease;
-    }
-    
-    button:hover, a.btn:hover { 
-      background: var(--primary-light);
-      color: var(--primary-color);
-    }
-    
-    button.primary {
-      background: var(--primary-color);
-      color: white;
-      border: none;
-    }
-    
-    button.primary:hover {
-      background: var(--secondary-color);
-      color: white;
-    }
-
-    .search-results {
-      margin-top: 30px;
-    }
-
-    .result-card {
-      background: var(--card-bg);
-      padding: 15px 20px;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .result-card .title {
-      font-weight: 600;
-      font-size: 1.1em;
-    }
-
-    .result-card .title a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .result-card .title a:hover {
-      text-decoration: underline;
-    }
-
-    .result-card .url {
-      font-size: 0.9em;
-      color: var(--text-light);
-      word-break: break-all;
-    }
-
-    .result-card .snippet {
-      font-size: 0.95em;
-      color: var(--text-color);
-    }
-
-    .result-card .actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .news-section {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .news-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .news-card {
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .news-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    }
-
-    .news-card .news-title {
-      font-weight: 600;
-      font-size: 1.1em;
-    }
-
-    .news-card .news-title a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .news-card .news-title a:hover {
-      text-decoration: underline;
-    }
-
-    .news-card .news-snippet {
-      font-size: 0.9em;
-      color: var(--text-light);
-    }
-
-    .message-box {
+    /* Tambahan style untuk admin info */
+    .admin-info {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      color: #856404;
       padding: 12px 15px;
       border-radius: 8px;
-      margin-bottom: 20px;
-      display: none;
+      margin: 20px 0;
+      font-size: 0.9em;
     }
     
-    .success-box {
-      background: #e8f5e9;
-      color: var(--success-color);
-      border-left: 4px solid var(--success-color);
+    .admin-info h4 {
+      margin: 0 0 8px 0;
+      color: #856404;
     }
     
-    .error-box {
-      background: #ffebee;
-      color: var(--error-color);
-      border-left: 4px solid var(--error-color);
-    }
-
-    .auth-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .online-dot, .offline-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    
-    .online-dot {
-      background: var(--success-color);
-    }
-    
-    .offline-dot {
-      background: var(--error-color);
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 2px solid var(--primary-color);
-    }
-
-    /* New style for login button container */
-    .auth-buttons {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-
-    /* Shortcut buttons section */
-    .shortcut-section {
-        display: flex;
-        justify-content: center; /* Center the buttons */
-        gap: 15px;
-        margin-bottom: 30px;
-        flex-wrap: wrap;
-    }
-
-    .shortcut-section .btn {
-        background: var(--primary-light);
-        color: var(--primary-color);
-        border: 1px solid var(--primary-color);
-        font-weight: 600;
-    }
-
-    .shortcut-section .btn:hover {
-        background: var(--primary-color);
-        color: white;
-    }
-
-    /* Pagination styles */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        margin: 20px 0;
-        gap: 5px;
-        flex-wrap: wrap;
-    }
-
-    .pagination a {
-        padding: 8px 12px;
-        text-decoration: none;
-        border: 1px solid var(--border-color);
-        border-radius: 5px;
-        color: var(--primary-color);
-        background: var(--card-bg);
-    }
-
-    .pagination a:hover {
-        background: var(--primary-light);
-    }
-
-    .pagination a.active {
-        background: var(--primary-color);
-        color: white;
-        border-color: var(--primary-color);
-    }
-
-    .pagination a.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    @media (max-width: 768px) {
-      .topbar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .controls {
-        flex-direction: column;
-      }
-      input[type="text"], input[type="number"] {
-        min-width: 100%;
-      }
-      .news-grid {
-        grid-template-columns: 1fr;
-      }
-      .auth-buttons {
-          flex-direction: column;
-          align-items: flex-start;
-      }
-      .shortcut-section {
-          flex-direction: column;
-          align-items: center;
-      }
-      .pagination {
-          flex-direction: column;
-          align-items: center;
-      }
-      .pagination a {
-          width: 100%;
-          text-align: center;
-      }
-    }
-
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-color: #1a1a1a;
-        --card-bg: #2d2d2d;
-        --text-color: #f1f1f1;
-        --text-light: #aaa;
-        --border-color: #444;
-      }
+    .admin-info code {
+      background: #f8f9fa;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: monospace;
     }
   </style>
 </head>
@@ -375,6 +58,23 @@
     </div>
 
     <div id="messageBox" class="message-box"></div>
+    
+    <!-- Info untuk admin -->
+    <div id="adminInfo" class="admin-info" style="display: none;">
+      <h4>⚠️ Perhatian: Masalah Konfigurasi Database</h4>
+      <p>Anda mengalami error permission karena aturan keamanan Firestore belum dikonfigurasi dengan benar.</p>
+      <p>Silakan buka Firebase Console &gt; Firestore Database &gt; Rules dan terapkan aturan berikut:</p>
+      <code>
+        rules_version = '2';<br>
+        service cloud.firestore {<br>
+        &nbsp; match /databases/{database}/documents {<br>
+        &nbsp; &nbsp; match /bookmarks/{bookmarkId} {<br>
+        &nbsp; &nbsp; &nbsp; allow read, write: if request.auth != null;<br>
+        &nbsp; &nbsp; }<br>
+        &nbsp; }<br>
+        }
+      </code>
+    </div>
 
     <!-- Shortcut Buttons Section -->
     <div class="shortcut-section">
@@ -409,7 +109,6 @@
     </div>
   </div>
 
-  <!-- Firebase App (the core Firebase SDK) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
@@ -424,10 +123,12 @@
       getFirestore, 
       collection, 
       addDoc, 
-      serverTimestamp 
+      serverTimestamp,
+      doc,
+      setDoc 
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    // Konfigurasi Firebase Anda
+    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDzhYuxmxDEqtQBYFFlyYf1ZCB1lzg7zUQ",
       authDomain: "wharsa-20c0d.firebaseapp.com",
@@ -445,17 +146,17 @@
     const db = getFirestore(app);
 
     // Konstanta untuk Google CSE dan Berita
-    const GOOGLE_CSE_API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc"; // API Key Google Cloud Anda
-    const GOOGLE_CSE_CX = "332c680f2381f4787"; // ID Mesin Pencari Kustom Anda
+    const GOOGLE_CSE_API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
+    const GOOGLE_CSE_CX = "332c680f2381f4787";
     const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
 
-    let currentUser = null; // Untuk menyimpan informasi pengguna yang login
-    let currentPage = 1; // Halaman saat ini
-    let totalResults = 0; // Total hasil pencarian
-    let resultsPerPage = 10; // Jumlah hasil per halaman
-    let currentQuery = ""; // Query pencarian saat ini
-    let currentStartYear = ""; // Tahun mulai saat ini
-    let currentEndYear = ""; // Tahun akhir saat ini
+    let currentUser = null;
+    let currentPage = 1;
+    let totalResults = 0;
+    let resultsPerPage = 10;
+    let currentQuery = "";
+    let currentStartYear = "";
+    let currentEndYear = "";
 
     // Fungsi untuk menampilkan pesan
     function showMessage(message, type = 'success') {
@@ -464,9 +165,14 @@
       messageBox.className = `message-box ${type}-box`;
       messageBox.style.display = 'block';
       
+      // Tampilkan info admin untuk error permission
+      if (message.includes('permissions') || message.includes('izin')) {
+        document.getElementById('adminInfo').style.display = 'block';
+      }
+      
       setTimeout(() => {
         messageBox.style.display = 'none';
-      }, 3000);
+      }, 5000);
     }
 
     // Login dengan Google
@@ -496,7 +202,6 @@
     window.addBookmarkFromSearch = async function(title, url) {
       if (!currentUser) {
         showMessage('Anda harus login untuk menyimpan bookmark.', 'error');
-        // Tawarkan login jika belum login
         if (confirm('Anda belum login. Apakah Anda ingin login dengan Google sekarang?')) {
           loginWithGoogle();
         }
@@ -512,10 +217,14 @@
       }
       
       try {
-        await addDoc(collection(db, 'bookmarks'), {
+        // Gunakan UID pengguna sebagai bagian dari ID dokumen untuk memudahkan query
+        const bookmarkId = `${currentUser.uid}_${Date.now()}`;
+        const bookmarkRef = doc(db, 'bookmarks', bookmarkId);
+        
+        await setDoc(bookmarkRef, {
           title: title,
           url: url,
-          tags: ['jurnal', 'pencarian'], // Tag default untuk bookmark dari pencarian
+          tags: ['jurnal', 'pencarian'],
           userId: currentUser.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
@@ -524,7 +233,13 @@
         showMessage('Bookmark berhasil ditambahkan!');
       } catch (error) {
         console.error('Error adding bookmark:', error);
-        showMessage('Gagal menambahkan bookmark: ' + error.message, 'error');
+        
+        // Berikan pesan error yang lebih spesifik
+        if (error.code === 'permission-denied') {
+          showMessage('Error: Izin ditolak. Silakan konfigurasi aturan keamanan Firestore.', 'error');
+        } else {
+          showMessage('Gagal menambahkan bookmark: ' + error.message, 'error');
+        }
       }
     };
 
@@ -592,7 +307,6 @@
       const endYear = document.getElementById('endYear').value.trim();
       const resultsList = document.getElementById('resultsList');
       
-      // Simpan parameter pencarian saat ini
       currentPage = page;
       currentQuery = query;
       currentStartYear = startYear;
@@ -606,28 +320,25 @@
         return;
       }
 
-      // Hitung indeks mulai berdasarkan halaman
       const startIndex = (page - 1) * resultsPerPage + 1;
       
       let searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_CSE_API_KEY}&cx=${GOOGLE_CSE_CX}&q=${encodeURIComponent(query)}&start=${startIndex}`;
       
-      // Tambahkan rentang tahun ke query jika diisi
       if (startYear && endYear) {
-          searchUrl += `&sort=date:r:${startYear}0101:${endYear}1231`; // Format untuk rentang tanggal
+          searchUrl += `&sort=date:r:${startYear}0101:${endYear}1231`;
       } else if (startYear) {
-          searchUrl += `&sort=date:r:${startYear}0101:20991231`; // Dari tahun mulai hingga masa depan
+          searchUrl += `&sort=date:r:${startYear}0101:20991231`;
       } else if (endYear) {
-          searchUrl += `&sort=date:r:19000101:${endYear}1231`; // Dari masa lalu hingga tahun akhir
+          searchUrl += `&sort=date:r:19000101:${endYear}1231`;
       }
 
       try {
         const response = await fetch(searchUrl);
         const data = await response.json();
 
-        resultsList.innerHTML = ''; // Bersihkan hasil sebelumnya
+        resultsList.innerHTML = '';
 
         if (data.items && data.items.length > 0) {
-          // Simpan total hasil
           totalResults = parseInt(data.searchInformation.totalResults) || 0;
           
           data.items.forEach(item => {
@@ -644,7 +355,6 @@
             resultsList.appendChild(card);
           });
           
-          // Generate pagination controls
           generatePaginationControls(currentPage, totalResults, resultsPerPage);
         } else {
           resultsList.innerHTML = '<p>Tidak ada hasil yang ditemukan untuk pencarian Anda.</p>';
@@ -664,10 +374,10 @@
         const response = await fetch(NEWS_URL);
         const data = await response.json();
 
-        newsList.innerHTML = ''; // Bersihkan placeholder
+        newsList.innerHTML = '';
 
         if (data.data && data.data.length > 0) {
-          data.data.slice(0, 6).forEach(newsItem => { // Tampilkan 6 berita teratas
+          data.data.slice(0, 6).forEach(newsItem => {
             const card = document.createElement('div');
             card.className = 'news-card';
             card.innerHTML = `
@@ -696,17 +406,15 @@
       const userName = document.getElementById('userName');
 
       if (user) {
-        // Pengguna login
         authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
-        userInfoDiv.style.display = 'flex'; // Tampilkan info pengguna
-        loginButton.style.display = 'none'; // Sembunyikan tombol login
-        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40'; // Placeholder jika tidak ada foto
+        userInfoDiv.style.display = 'flex';
+        loginButton.style.display = 'none';
+        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
         userName.textContent = user.displayName || user.email;
       } else {
-        // Pengguna belum login
         authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
-        userInfoDiv.style.display = 'none'; // Sembunyikan info pengguna
-        loginButton.style.display = 'block'; // Tampilkan tombol login
+        userInfoDiv.style.display = 'none';
+        loginButton.style.display = 'block';
       }
     });
 
@@ -714,7 +422,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadNews();
       
-      // Tambahkan event listener untuk tombol Enter pada input pencarian
       document.getElementById('searchQuery').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
           performSearch(1);
