@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WHARSA - Jurnal & Berita</title>
+  <title>Wahasa Academic Refrence Search Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <style>
@@ -598,6 +598,28 @@
       flex-direction: column;
       gap: 4px;
     }
+    
+    .app-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-top: -4px;
+    }
+    
+    /* Loading spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      margin: 20px auto;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top: 4px solid var(--primary);
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -607,7 +629,7 @@
         <div class="logo">🔍</div>
         <div class="app-title-content">
           <h1>WHARSA</h1>
-          <br><h1>Wahasa Academic Refrence Search Assistant</h1>
+          <div class="app-subtitle">Wahasa Academic Reference Search Assistant</div>
           <div id="authStatus" class="auth-status">
             <span class="offline-dot"></span>
             <span>Status: Belum login</span>
@@ -639,7 +661,7 @@
     <div id="messageBox" class="message-box"></div>
 
     <div class="controls">
-      <input type="text" id="searchQuery" placeholder="Cari jurnal atau artikel...">
+      <input type="text" id="searchQuery" placeholder="Cari jurnal atau artikel..." onkeypress="handleKeyPress(event)">
       <input type="number" id="startYear" placeholder="Tahun Mulai (Opsional)" min="1900" max="2099">
       <input type="number" id="endYear" placeholder="Tahun Akhir (Opsional)" min="1900" max="2099">
       <button onclick="performSearch(1)" class="primary">
@@ -654,7 +676,6 @@
       </a>
       <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="btn">
         <i class="fas fa-book"></i> Perpustakaan
-      </a>
       </a>
     </div>
 
@@ -764,6 +785,13 @@
       }
     });
 
+    // Handle Enter key press in search input
+    window.handleKeyPress = function(event) {
+      if (event.key === 'Enter') {
+        performSearch(1);
+      }
+    };
+
     function showMessage(message, type = 'success') {
       const messageBox = document.getElementById('messageBox');
       messageBox.textContent = message;
@@ -844,8 +872,14 @@
       const endYear = document.getElementById('endYear').value.trim();
       const resultsList = document.getElementById('resultsList');
 
+      // Validasi tahun
+      if (startYear && endYear && parseInt(startYear) > parseInt(endYear)) {
+        showMessage('Tahun mulai tidak boleh lebih besar dari tahun akhir', 'error');
+        return;
+      }
+
       currentPage = page;
-      resultsList.innerHTML = '<p class="loading">Mencari...</p>';
+      resultsList.innerHTML = '<div class="spinner"></div>';
       document.getElementById('paginationControls').style.display = 'none';
 
       if (!queryInput) {
@@ -870,14 +904,14 @@
             const card = document.createElement('div');
             card.className = 'result-card';
             
-            // Escape karakter khusus dalam string JSON
-            const escapedItem = JSON.stringify(item)
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, "\\'");
-              
+            // Gunakan data attribute untuk menyimpan data item
             card.innerHTML = `
               <div class="bookmark-container">
-                <button class="bookmark-btn" data-url="${item.link}" onclick="addBookmark(${escapedItem})">
+                <button class="bookmark-btn" data-url="${item.link}" 
+                        data-title="${item.title.replace(/"/g, '&quot;')}" 
+                        data-snippet="${item.snippet.replace(/"/g, '&quot;')}" 
+                        data-displaylink="${item.displayLink.replace(/"/g, '&quot;')}" 
+                        onclick="addBookmarkFromButton(this)">
                   <i class="far fa-bookmark"></i>
                 </button>
               </div>
@@ -896,12 +930,23 @@
           // Update pagination controls
           updatePaginationControls();
         } else {
-          resultsList.innerHTML = '<p>Tidak ada hasil.</p>';
+          resultsList.innerHTML = '<p>Tidak ada hasil ditemukan untuk pencarian Anda.</p>';
         }
       } catch (error) {
         console.error('Search error:', error);
-        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan saat mencari.</p>';
+        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan saat mencari. Silakan coba lagi.</p>';
       }
+    };
+
+    // Fungsi untuk menambahkan bookmark dari tombol
+    window.addBookmarkFromButton = function(button) {
+      const item = {
+        title: button.getAttribute('data-title'),
+        link: button.getAttribute('data-url'),
+        snippet: button.getAttribute('data-snippet'),
+        displayLink: button.getAttribute('data-displaylink')
+      };
+      addBookmark(item);
     };
 
     // Fungsi untuk mengupdate status bookmark
@@ -1016,70 +1061,53 @@
           </div>
         </div>
       `;
-      
+
       try {
         const response = await fetch(NEWS_URL);
         const data = await response.json();
+        const news = data.data.slice(0, 6); // Ambil 6 berita terbaru
+
         newsList.innerHTML = '';
-        if (data.data && data.data.length > 0) {
-          data.data.slice(0, 6).forEach(newsItem => {
-            const card = document.createElement('div');
-            card.className = 'news-card';
-            const imgUrl = newsItem.image?.large || newsItem.image?.small || newsItem.thumbnail || "https://via.placeholder.com/300x180/cccccc/969696?text=No+Image";
-            card.innerHTML = `
-              <img src="${imgUrl}" alt="${newsItem.title}" class="news-image" onerror="this.src='https://via.placeholder.com/300x180/cccccc/969696?text=No+Image'">
-              <div class="news-content">
-                <div class="news-title"><a href="${newsItem.link}" target="_blank">${newsItem.title}</a></div>
-                <div class="news-snippet">${newsItem.contentSnippet || newsItem.description || ''}</div>
-              </div>
-            `;
-            newsList.appendChild(card);
-          });
-        } else {
-          newsList.innerHTML = '<p>Tidak ada berita.</p>';
-        }
+        news.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'news-card';
+          card.innerHTML = `
+            <img src="${item.image.large}" alt="${item.title}" class="news-image" onerror="this.src='https://via.placeholder.com/300x180?text=Gambar+Tidak+Tersedia'">
+            <div class="news-content">
+              <div class="news-title"><a href="${item.link}" target="_blank">${item.title}</a></div>
+              <div class="news-snippet">${item.contentSnippet || item.description || ''}</div>
+            </div>
+          `;
+          newsList.appendChild(card);
+        });
       } catch (error) {
-        newsList.innerHTML = '<p class="error-box">Gagal memuat berita.</p>';
+        console.error('Error loading news:', error);
+        newsList.innerHTML = '<p>Gagal memuat berita. Silakan refresh halaman.</p>';
       }
     }
 
+    // Auth state listener
     onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      const authStatusDiv = document.getElementById('authStatus');
-      const userInfoDiv = document.getElementById('userInfo');
+      const userInfo = document.getElementById('userInfo');
       const loginButton = document.getElementById('loginButton');
-      const userAvatar = document.getElementById('userAvatar');
-      const userNameEl = document.getElementById('userName');
-
+      const authStatus = document.getElementById('authStatus');
+      
       if (user) {
-        // Ambil kata pertama dari displayName atau email
-        const displayName = (user.displayName || user.email || "").split(" ")[0];
-        userNameEl.textContent = displayName;
-
-        authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
-        userInfoDiv.style.display = 'flex';
+        currentUser = user;
+        userInfo.style.display = 'flex';
+        document.getElementById('userName').textContent = user.displayName || user.email;
+        document.getElementById('userAvatar').src = user.photoURL || 'https://via.placeholder.com/40';
         loginButton.style.display = 'none';
-        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
-        
-        // Update status bookmark jika ada hasil pencarian
-        if (currentSearchResults.length > 0) {
-          updateBookmarkStatuses();
-        }
+        authStatus.innerHTML = '<span class="online-dot"></span> Status: Online';
       } else {
-        authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
-        userInfoDiv.style.display = 'none';
+        currentUser = null;
+        userInfo.style.display = 'none';
         loginButton.style.display = 'flex';
-        
-        // Reset status bookmark
-        const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
-        bookmarkButtons.forEach(btn => {
-          btn.classList.remove('bookmarked');
-          btn.innerHTML = '<i class="far fa-bookmark"></i>';
-        });
+        authStatus.innerHTML = '<span class="offline-dot"></span> Status: Offline';
       }
     });
 
-    // Load news on page load
+    // Initialize the app
     loadNews();
   </script>
 </body>
