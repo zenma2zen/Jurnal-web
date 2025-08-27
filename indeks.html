@@ -517,6 +517,39 @@
         display: flex;
       }
     }
+
+    /* Perbaikan tata letak untuk status auth */
+    .auth-status-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .login-button-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .auth-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+      }
+      
+      .login-button-container {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      
+      #loginButton {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body>
@@ -524,7 +557,7 @@
     <div class="topbar">
       <div class="app-title">
         <div class="logo">🔍</div>
-        <div>
+        <div class="auth-status-container">
           <h1>WHARSA - Jurnal & Berita</h1>
           <div id="authStatus" class="auth-status">
             <span class="offline-dot"></span>
@@ -542,9 +575,14 @@
           </div>
           <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
         </div>
-        <button id="loginButton" onclick="loginWithGoogle()" class="primary" style="display: none;">
-          <i class="fab fa-google"></i> Login dengan Google
-        </button>
+        <div class="login-button-container">
+          <button id="loginButton" onclick="loginWithGoogle()" class="primary">
+            <i class="fab fa-google"></i> Login dengan Google
+          </button>
+          <a href="bookmarks.html" class="btn">
+            <i class="fas fa-bookmark"></i> Bookmark
+          </a>
+        </div>
       </div>
     </div>
 
@@ -567,8 +605,8 @@
       <a href="https://www.example.com/perpustakaan" target="_blank" class="btn">
         <i class="fas fa-book"></i> Perpustakaan Sekolah
       </a>
-      <a href="bookmarks.html" class="btn">
-        <i class="fas fa-bookmark"></i> Lihat Bookmark Saya
+      <a href="https://www.example.com/jurnal" target="_blank" class="btn">
+        <i class="fas fa-book-open"></i> Jurnal Akademik
       </a>
     </div>
 
