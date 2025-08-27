@@ -342,6 +342,108 @@
       color: #ff4444;
     }
 
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: var(--card-bg);
+      padding: 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+
+    .sync-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .sync-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sync-option:hover {
+      border-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    .sync-option input {
+      margin: 0;
+    }
+
+    .sync-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    /* Progress bar styles */
+    .progress-container {
+      width: 100%;
+      height: 8px;
+      background-color: var(--border);
+      border-radius: 4px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--primary-gradient);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
     /* Responsive styles */
     @media (max-width: 768px) {
       .topbar {
@@ -448,6 +550,9 @@
         <div id="userInfo" class="user-info" style="display: none;">
           <div>
             <div id="userName"></div>
+            <button onclick="showSyncModal()" class="btn" title="Sinkronisasi Bookmark">
+              <i class="fas fa-sync-alt"></i> Sinkronisasi
+            </button>
             <button onclick="logout()" class="btn">Logout</button>
           </div>
           <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
@@ -480,6 +585,42 @@
     </div>
   </div>
 
+  <!-- Modal for sync options -->
+  <div id="syncModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Sinkronisasi Bookmark</h3>
+        <button class="close-modal" onclick="closeSyncModal()">&times;</button>
+      </div>
+      <div class="sync-options">
+        <label class="sync-option">
+          <input type="radio" name="syncOption" value="import" checked>
+          <div>
+            <strong>Impor dari Chrome</strong>
+            <p>Impor bookmark dari browser Chrome Anda</p>
+          </div>
+        </label>
+        <label class="sync-option">
+          <input type="radio" name="syncOption" value="export">
+          <div>
+            <strong>Ekspor ke Chrome</strong>
+            <p>Ekspor bookmark ke browser Chrome Anda</p>
+          </div>
+        </label>
+      </div>
+      <div id="progressContainer" style="display: none;">
+        <div class="progress-container">
+          <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div id="progressText" class="progress-text">Mempersiapkan...</div>
+      </div>
+      <div class="sync-actions">
+        <button class="btn" onclick="closeSyncModal()">Batal</button>
+        <button id="startSyncBtn" class="btn primary" onclick="startSync()">Mulai Sinkronisasi</button>
+      </div>
+    </div>
+  </div>
+
   <button class="fab" id="scrollToTop">
     <i class="fas fa-arrow-up"></i>
   </button>
@@ -504,7 +645,9 @@
       updateDoc, 
       deleteDoc, 
       doc,
-      serverTimestamp 
+      serverTimestamp,
+      addDoc,
+      writeBatch
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -735,6 +878,233 @@
       renderBookmarks();
     };
 
+    // Fungsi untuk menampilkan modal sinkronisasi
+    window.showSyncModal = function() {
+      document.getElementById('syncModal').style.display = 'flex';
+    };
+
+    // Fungsi untuk menutup modal sinkronisasi
+    window.closeSyncModal = function() {
+      document.getElementById('syncModal').style.display = 'none';
+      document.getElementById('progressContainer').style.display = 'none';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('progressText').textContent = 'Mempersiapkan...';
+      document.getElementById('startSyncBtn').disabled = false;
+    };
+
+    // Fungsi untuk memulai sinkronisasi
+    window.startSync = async function() {
+      const syncOption = document.querySelector('input[name="syncOption"]:checked').value;
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      const startSyncBtn = document.getElementById('startSyncBtn');
+      
+      progressContainer.style.display = 'block';
+      startSyncBtn.disabled = true;
+      
+      try {
+        if (syncOption === 'import') {
+          await importChromeBookmarks(progressBar, progressText);
+        } else {
+          await exportToChromeBookmarks(progressBar, progressText);
+        }
+      } catch (error) {
+        console.error('Sync error:', error);
+        progressText.textContent = 'Error: ' + error.message;
+        showMessage('Sinkronisasi gagal: ' + error.message, 'error');
+      } finally {
+        startSyncBtn.disabled = false;
+      }
+    };
+
+    // Fungsi untuk mengimpor bookmark dari Chrome
+    async function importChromeBookmarks(progressBar, progressText) {
+      progressText.textContent = 'Mengambil bookmark dari Chrome...';
+      
+      return new Promise((resolve, reject) => {
+        if (!chrome || !chrome.bookmarks) {
+          reject(new Error('API Chrome Bookmark tidak tersedia. Pastikan Anda menggunakan browser Chrome.'));
+          return;
+        }
+        
+        // Mengambil bookmark dari Chrome
+        chrome.bookmarks.getTree(async (bookmarkTreeNodes) => {
+          try {
+            const bookmarks = flattenBookmarks(bookmarkTreeNodes);
+            progressBar.style.width = '10%';
+            progressText.textContent = `Menemukan ${bookmarks.length} bookmark...`;
+            
+            const user = auth.currentUser;
+            if (!user) {
+              reject(new Error('Pengguna belum login'));
+              return;
+            }
+            
+            const batch = writeBatch(db);
+            const existingUrls = new Set(userBookmarks.map(b => b.url));
+            let importedCount = 0;
+            
+            for (let i = 0; i < bookmarks.length; i++) {
+              const bookmark = bookmarks[i];
+              
+              // Skip jika bookmark sudah ada
+              if (existingUrls.has(bookmark.url)) {
+                continue;
+              }
+              
+              // Tambahkan bookmark baru ke batch
+              const newBookmarkRef = doc(collection(db, 'bookmarks'));
+              batch.set(newBookmarkRef, {
+                userId: user.uid,
+                title: bookmark.title || 'No Title',
+                url: bookmark.url,
+                displayLink: extractHostname(bookmark.url),
+                snippet: '',
+                tags: [],
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              });
+              
+              importedCount++;
+              
+              // Update progress
+              const progress = 10 + Math.floor((i / bookmarks.length) * 80);
+              progressBar.style.width = `${progress}%`;
+              progressText.textContent = `Mengimpor ${importedCount} bookmark...`;
+              
+              // Commit batch setiap 100 operasi untuk menghindari batasan Firebase
+              if (i % 100 === 0 && i > 0) {
+                await batch.commit();
+                batch = writeBatch(db);
+              }
+            }
+            
+            // Commit sisa operasi
+            if (importedCount > 0) {
+              await batch.commit();
+            }
+            
+            progressBar.style.width = '100%';
+            progressText.textContent = `Berhasil mengimpor ${importedCount} bookmark!`;
+            showMessage(`Berhasil mengimpor ${importedCount} bookmark dari Chrome`);
+            
+            setTimeout(() => {
+              closeSyncModal();
+              resolve();
+            }, 1500);
+            
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+    }
+
+    // Fungsi untuk mengekspor bookmark ke Chrome
+    async function exportToChromeBookmarks(progressBar, progressText) {
+      progressText.textContent = 'Mempersiapkan ekspor...';
+      
+      return new Promise((resolve, reject) => {
+        if (!chrome || !chrome.bookmarks) {
+          reject(new Error('API Chrome Bookmark tidak tersedia. Pastikan Anda menggunakan browser Chrome.'));
+          return;
+        }
+        
+        // Cari folder WHARSA atau buat jika belum ada
+        chrome.bookmarks.search({ title: 'WHARSA Exports' }, (results) => {
+          let wharsaFolder;
+          
+          if (results.length > 0) {
+            wharsaFolder = results[0];
+          } else {
+            chrome.bookmarks.create({
+              title: 'WHARSA Exports',
+              parentId: '1' // Root bookmark folder
+            }, (folder) => {
+              wharsaFolder = folder;
+              continueExport(wharsaFolder);
+            });
+            return;
+          }
+          
+          continueExport(wharsaFolder);
+        });
+        
+        async function continueExport(wharsaFolder) {
+          try {
+            // Hapus ekspor sebelumnya jika ada
+            const children = await new Promise(resolve => {
+              chrome.bookmarks.getChildren(wharsaFolder.id, resolve);
+            });
+            
+            for (const child of children) {
+              await new Promise(resolve => {
+                chrome.bookmarks.remove(child.id, resolve);
+              });
+            }
+            
+            progressBar.style.width = '10%';
+            progressText.textContent = `Mengekspor ${userBookmarks.length} bookmark...`;
+            
+            // Ekspor setiap bookmark
+            let exportedCount = 0;
+            for (let i = 0; i < userBookmarks.length; i++) {
+              const bookmark = userBookmarks[i];
+              
+              await new Promise(resolve => {
+                chrome.bookmarks.create({
+                  parentId: wharsaFolder.id,
+                  title: bookmark.title,
+                  url: bookmark.url
+                }, resolve);
+              });
+              
+              exportedCount++;
+              
+              // Update progress
+              const progress = 10 + Math.floor((i / userBookmarks.length) * 80);
+              progressBar.style.width = `${progress}%`;
+              progressText.textContent = `Mengekspor ${exportedCount} bookmark...`;
+            }
+            
+            progressBar.style.width = '100%';
+            progressText.textContent = `Berhasil mengekspor ${exportedCount} bookmark!`;
+            showMessage(`Berhasil mengekspor ${exportedCount} bookmark ke Chrome`);
+            
+            setTimeout(() => {
+              closeSyncModal();
+              resolve();
+            }, 1500);
+            
+          } catch (error) {
+            reject(error);
+          }
+        }
+      });
+    }
+
+    // Fungsi untuk meratakan struktur bookmark tree Chrome
+    function flattenBookmarks(bookmarkTreeNodes) {
+      const bookmarks = [];
+      
+      function processNode(node) {
+        if (node.url) {
+          bookmarks.push({
+            title: node.title,
+            url: node.url
+          });
+        }
+        
+        if (node.children) {
+          node.children.forEach(processNode);
+        }
+      }
+      
+      bookmarkTreeNodes.forEach(processNode);
+      return bookmarks;
+    }
+
     // Inisialisasi
     onAuthStateChanged(auth, (user) => {
       const loginButton = document.getElementById('loginButton');
@@ -744,24 +1114,25 @@
       const userNameEl = document.getElementById('userName');
 
       if (user) {
-        // Ambil kata pertama dari displayName atau email
-        const displayName = (user.displayName || user.email || "").split(" ")[0];
-        userNameEl.textContent = displayName;
-
-        authStatusDiv.innerHTML = `<span class="online-dot"></span><span>Status: Login sebagai ${user.email}</span>`;
-        userInfoDiv.style.display = 'flex';
+        // User is signed in
         loginButton.style.display = 'none';
+        userInfoDiv.style.display = 'flex';
+        authStatusDiv.innerHTML = '<span class="online-dot"></span><span>Status: Online</span>';
+        
+        // Set user info
+        userNameEl.textContent = user.displayName || user.email;
         userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
         
-        // Load bookmarks
+        // Load user bookmarks
         loadBookmarks();
       } else {
-        authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
-        userInfoDiv.style.display = 'none';
+        // User is signed out
         loginButton.style.display = 'block';
+        userInfoDiv.style.display = 'none';
+        authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
         
-        // Clear bookmarks list
-        document.getElementById("bookmarksList").innerHTML = `
+        // Clear bookmarks
+        document.getElementById('bookmarksList').innerHTML = `
           <div class="empty-state">
             <i class="fas fa-bookmark"></i>
             <h3>Belum ada bookmark</h3>
@@ -771,9 +1142,9 @@
       }
     });
 
-    // Add event listeners for search and filter
-    document.getElementById("searchBookmarks").addEventListener("input", renderBookmarks);
-    document.getElementById("filterTags").addEventListener("input", renderBookmarks);
+    // Event listeners untuk filter
+    document.getElementById('searchBookmarks').addEventListener('input', renderBookmarks);
+    document.getElementById('filterTags').addEventListener('input', renderBookmarks);
   </script>
 </body>
 </html>
