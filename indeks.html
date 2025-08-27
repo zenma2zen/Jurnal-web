@@ -706,7 +706,7 @@
     };
 
     // Fungsi untuk menambahkan bookmark
-    async function addBookmark(item) {
+    window.addBookmark = async function(item) {
       if (!currentUser) {
         showMessage('Anda harus login untuk menambahkan bookmark', 'error');
         return;
@@ -783,9 +783,15 @@
           data.items.forEach(item => {
             const card = document.createElement('div');
             card.className = 'result-card';
+            
+            // Escape karakter khusus dalam string JSON
+            const escapedItem = JSON.stringify(item)
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, "\\'");
+              
             card.innerHTML = `
               <div class="bookmark-container">
-                <button class="bookmark-btn" data-url="${item.link}" onclick="addBookmark(${escapeItemForHTML(item)})">
+                <button class="bookmark-btn" data-url="${item.link}" onclick="addBookmark(${escapedItem})">
                   <i class="far fa-bookmark"></i>
                 </button>
               </div>
@@ -807,7 +813,8 @@
           resultsList.innerHTML = '<p>Tidak ada hasil.</p>';
         }
       } catch (error) {
-        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan.</p>';
+        console.error('Search error:', error);
+        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan saat mencari.</p>';
       }
     };
 
@@ -842,20 +849,6 @@
       } catch (error) {
         console.error('Error checking bookmarks: ', error);
       }
-    }
-
-    // Helper function untuk escape item agar aman untuk HTML
-    function escapeItemForHTML(item) {
-      const escapedItem = {};
-      for (const key in item) {
-        if (item.hasOwnProperty(key)) {
-          escapedItem[key] = item[key]
-            .toString()
-            .replace(/'/g, "\\'")
-            .replace(/"/g, '\\"');
-        }
-      }
-      return escapedItem;
     }
 
     function updatePaginationControls() {
