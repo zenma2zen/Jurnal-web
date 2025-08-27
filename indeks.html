@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WHARSA - Jurnal & Berita</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WHARSA - Bookmark Saya</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-   <style>
+  <style>
     :root {
       --primary: #4361ee;
       --primary-gradient: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
@@ -43,7 +43,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      padding: 12px;
+      padding: 16px;
       transition: all 0.3s ease;
       min-height: 100vh;
     }
@@ -55,14 +55,16 @@
 
     .topbar {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
       background: rgba(255,255,255,0.9);
       backdrop-filter: blur(10px);
-      padding: 16px;
+      padding: 16px 24px;
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
     }
 
     .dark-mode .topbar {
@@ -72,11 +74,11 @@
     .app-title {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     h1 {
-      font-size: 1.3rem;
+      font-size: 1.5rem;
       font-weight: 700;
       background: var(--primary-gradient);
       -webkit-background-clip: text;
@@ -85,41 +87,11 @@
     }
 
     .logo {
-      font-size: 1.6rem;
-    }
-
-    .auth-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      width: 100%;
-    }
-
-    .user-info {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid var(--primary);
-    }
-
-    .auth-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.8rem;
-      color: var(--text-light);
+      font-size: 1.8rem;
     }
 
     .btn, button {
-      padding: 10px 14px;
+      padding: 10px 18px;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       background: var(--card-bg);
@@ -130,15 +102,14 @@
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 6px;
-      width: 100%;
     }
 
     .btn:hover, button:hover {
       border-color: var(--primary);
       color: var(--primary);
       box-shadow: 0 0 12px rgba(67, 97, 238, 0.2);
+      transform: translateY(-2px);
     }
 
     .primary {
@@ -150,170 +121,203 @@
     .primary:hover {
       box-shadow: 0 0 16px rgba(67, 97, 238, 0.4);
       color: #fff;
+      transform: translateY(-2px);
     }
 
-    .bookmark-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-light);
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 4px;
-    }
-
-    .bookmark-btn.bookmarked {
-      color: gold;
-    }
-
-    .controls {
+    .bookmark-actions {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .controls input {
-      padding: 12px;
+    .bookmark-actions input {
+      padding: 12px 16px;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
+      flex: 1;
       background: var(--card-bg);
       color: var(--text);
-      width: 100%;
+      min-width: 120px;
     }
 
-    .shortcut-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin: 20px 0;
+    .bookmark-actions input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
     }
 
-    .shortcut-section .btn {
-      text-align: center;
+    .bookmarks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
     }
 
-    .search-results, .news-section {
-      margin-top: 24px;
-    }
-
-    .section-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 16px;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .result-card {
+    .bookmark-card {
       background: var(--card-bg);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 20px;
       box-shadow: var(--shadow);
-      margin-bottom: 12px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       border-left: 4px solid var(--primary);
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 180px;
     }
 
-    .result-card .title a {
-      font-size: 1rem;
+    .bookmark-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .bookmark-title a {
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--text);
       text-decoration: none;
-      padding-right: 30px;
+      transition: color 0.2s ease;
+      margin-bottom: 8px;
       display: block;
     }
 
-    .url {
-      font-size: 0.8rem;
+    .bookmark-title a:hover {
       color: var(--primary);
-      margin: 6px 0;
+    }
+
+    .bookmark-url {
+      font-size: 0.85rem;
+      color: var(--primary);
+      margin-bottom: 12px;
       word-break: break-all;
     }
 
-    .snippet {
+    .bookmark-snippet {
       font-size: 0.9rem;
       color: var(--text-light);
-      margin-top: 8px;
+      margin-bottom: 16px;
       line-height: 1.5;
     }
 
-    .bookmark-container {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-    }
-
-    .pagination {
+    .bookmark-tags {
       display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 20px;
       flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
     }
 
-    .pagination a {
-      padding: 8px 12px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      text-decoration: none;
-      color: var(--text);
+    .tag {
+      background: var(--primary-gradient);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
       font-weight: 500;
     }
 
-    .pagination a.active {
-      background: var(--primary-gradient);
-      color: #fff;
-      border-color: transparent;
+    .bookmark-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
     }
 
-    .news-grid {
-      display: grid;
-      grid-template-columns: 1fr;
+    .bookmark-actions button {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      color: var(--border);
+    }
+
+    .empty-state h3 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .auth-container {
+      display: flex;
+      align-items: center;
       gap: 16px;
     }
 
-    .news-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-
-    .news-image {
-      width: 100%;
-      height: 160px;
+    
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
       object-fit: cover;
+      border: 2px solid var(--primary);
+      transition: all 0.3s ease;
+    }
+    
+    .user-avatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
     }
 
-    .news-content {
-      padding: 16px;
-    }
-
-    .news-title a {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text);
-      text-decoration: none;
-      line-height: 1.4;
-    }
-
-    .news-snippet {
+    .auth-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 0.85rem;
       color: var(--text-light);
-      line-height: 1.5;
-      margin-top: 8px;
+      margin-top: 4px;
+    }
+
+    .online-dot, .offline-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .online-dot {
+      background: #00c851;
+      box-shadow: 0 0 0 2px rgba(0, 200, 81, 0.3);
+    }
+
+    .offline-dot {
+      background: #ff4444;
+      box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.3);
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text);
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      background: var(--card-bg);
+      transform: rotate(30deg);
     }
 
     .message-box {
-      margin: 12px 0;
-      padding: 12px;
+      margin: 16px 0;
+      padding: 14px 18px;
       border-radius: var(--radius-sm);
       display: none;
       font-weight: 500;
-      font-size: 0.9rem;
     }
 
     .success-box { 
@@ -328,78 +332,174 @@
       border-left: 4px solid #ff4444;
     }
 
-    .theme-toggle {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: var(--text);
-      padding: 8px;
-      align-self: flex-end;
+    .dark-mode .success-box {
+      background: rgba(0, 200, 81, 0.15);
+      color: #00c851;
+    }
+    
+    .dark-mode .error-box {
+      background: rgba(255, 68, 68, 0.15);
+      color: #ff4444;
     }
 
-    /* Desktop styles */
-    @media (min-width: 768px) {
-      body {
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: var(--card-bg);
+      padding: 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 500px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card-bg);
+      color: var(--text);
+    }
+
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
         padding: 16px;
       }
       
-      .topbar {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 24px;
-      }
-      
       .auth-container {
-        flex-direction: row;
-        align-items: center;
-        width: auto;
-        gap: 16px;
+        width: 100%;
+        justify-content: space-between;
       }
       
-      .user-info {
-        flex-direction: row;
-        align-items: center;
-        gap: 12px;
+      .bookmark-actions {
+        flex-direction: column;
       }
       
-      .controls {
-        flex-direction: row;
+      .bookmark-actions input, .bookmark-actions button {
+        width: 100%;
       }
       
-      .controls input {
-        width: auto;
-        flex: 1;
-      }
-      
-      .controls button {
-        width: auto;
-      }
-      
-      .shortcut-section {
-        flex-direction: row;
-      }
-      
-      .shortcut-section .btn {
-        width: auto;
-        min-width: 160px;
-      }
-      
-      .news-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      .bookmarks-grid {
+        grid-template-columns: 1fr;
       }
     }
 
-    /* Very small devices */
-    @media (max-width: 360px) {
-      h1 {
-        font-size: 1.2rem;
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
       }
       
-      .btn, button {
-        padding: 8px 12px;
-        font-size: 0.8rem;
+      h1 {
+        font-size: 1.3rem;
+      }
+      
+      .user-info {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      
+      .user-info div {
+        text-align: right;
+      }
+      
+      .bookmark-actions {
+        flex-direction: column;
+      }
+    }
+
+    /* Animation for loading */
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .loading {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Floating action button for mobile */
+    .fab {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 16px rgba(67, 97, 238, 0.3);
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      z-index: 100;
+    }
+
+    @media (max-width: 768px) {
+      .fab {
+        display: flex;
       }
     }
   </style>
@@ -408,9 +508,9 @@
   <div class="container">
     <div class="topbar">
       <div class="app-title">
-        <div class="logo">🔍</div>
+        <div class="logo">🔖</div>
         <div>
-          <h1>WHARSA - Jurnal & Berita</h1>
+          <h1>WHARSA - Bookmark Saya</h1>
           <div id="authStatus" class="auth-status">
             <span class="offline-dot"></span>
             <span>Status: Belum login</span>
@@ -423,6 +523,9 @@
         <div id="userInfo" class="user-info" style="display: none;">
           <div>
             <div id="userName"></div>
+            <button onclick="showAddBookmarkModal()" class="btn primary">
+              <i class="fas fa-plus"></i> Tambah Bookmark
+            </button>
             <button onclick="logout()" class="btn">Logout</button>
           </div>
           <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
@@ -430,87 +533,87 @@
         <button id="loginButton" onclick="loginWithGoogle()" class="primary" style="display: none;">
           <i class="fab fa-google"></i> Login dengan Google
         </button>
+        <a href="indeks.html" class="btn">
+          <i class="fas fa-home"></i> Kembali ke Pencarian
+        </a>
       </div>
     </div>
 
     <div id="messageBox" class="message-box"></div>
 
-    <div class="controls">
-      <input type="text" id="searchQuery" placeholder="Cari jurnal atau artikel...">
-      <input type="number" id="startYear" placeholder="Tahun Mulai (Opsional)" min="1900" max="2099">
-      <input type="number" id="endYear" placeholder="Tahun Akhir (Opsional)" min="1900" max="2099">
-      <button onclick="performSearch(1)" class="primary">
-        <i class="fas fa-search"></i> Cari
+    <div class="bookmark-actions">
+      <input type="text" id="searchBookmarks" placeholder="Cari bookmark...">
+      <input type="text" id="filterTags" placeholder="Filter berdasarkan tag (pisahkan dengan koma)">
+      <button onclick="clearFilters()" class="btn">
+        <i class="fas fa-times"></i> Hapus Filter
       </button>
     </div>
 
-    <!-- Shortcut Buttons Section -->
-    <div class="shortcut-section">
-      <a href="https://www.example.com/sekolah" target="_blank" class="btn">
-        <i class="fas fa-school"></i> Web Sekolah
-      </a>
-      <a href="https://www.example.com/perpustakaan" target="_blank" class="btn">
-        <i class="fas fa-book"></i> Perpustakaan Sekolah
-      </a>
-      <a href="bookmarks.html" class="btn">
-        <i class="fas fa-bookmark"></i> Lihat Bookmark Saya
-      </a>
-    </div>
-
-    <div id="searchResults" class="search-results">
-      <h2 class="section-title">
-        <i class="fas fa-search"></i> Hasil Pencarian
-      </h2>
-      <div id="resultsList">
-        <p>Masukkan kata kunci untuk memulai pencarian.</p>
-      </div>
-      <div id="paginationControls" class="pagination" style="display: none;"></div>
-    </div>
-
-    <div class="news-section">
-      <h2 class="section-title">
-        <i class="fas fa-newspaper"></i> Berita Internasional Terbaru
-      </h2>
-      <div id="newsList" class="news-grid">
-        <div class="news-card loading">
-          <div style="height: 160px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-        <div class="news-card loading">
-          <div style="height: 160px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-        <div class="news-card loading">
-          <div style="height: 160px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
+    <div id="bookmarksList" class="bookmarks-grid">
+      <div class="empty-state">
+        <i class="fas fa-bookmark"></i>
+        <h3>Belum ada bookmark</h3>
+        <p>Bookmark yang Anda simpan akan muncul di sini.</p>
       </div>
     </div>
   </div>
+
+  <!-- Modal untuk menambah bookmark -->
+  <div id="addBookmarkModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Bookmark Baru</h3>
+        <button class="close-modal" onclick="closeAddBookmarkModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="bookmarkTitle">Judul</label>
+        <input type="text" id="bookmarkTitle" placeholder="Judul bookmark">
+      </div>
+      <div class="form-group">
+        <label for="bookmarkUrl">URL</label>
+        <input type="url" id="bookmarkUrl" placeholder="https://example.com">
+      </div>
+      <div class="form-group">
+        <label for="bookmarkDescription">Deskripsi (opsional)</label>
+        <textarea id="bookmarkDescription" rows="3" placeholder="Deskripsi singkat"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="bookmarkTags">Tag (pisahkan dengan koma)</label>
+        <input type="text" id="bookmarkTags" placeholder="tag1, tag2, tag3">
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeAddBookmarkModal()">Batal</button>
+        <button class="btn primary" onclick="addNewBookmark()">Simpan Bookmark</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab" id="scrollToTop">
+    <i class="fas fa-arrow-up"></i>
+  </button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
     import { 
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      signOut,
+      onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
     import { 
       getFirestore, 
       collection, 
-      addDoc, 
       query, 
       where, 
-      getDocs, 
-      serverTimestamp 
+      orderBy, 
+      onSnapshot, 
+      updateDoc, 
+      deleteDoc, 
+      doc,
+      serverTimestamp,
+      addDoc
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -528,21 +631,28 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const GOOGLE_CSE_API_KEY = "AIzaSyA5LuzIIPGstJMeLSxegUxM1pZIho0dibc";
-    const GOOGLE_CSE_CX = "332c680f2381f4787";
-    const NEWS_URL = "https://berita-indo-api.vercel.app/v1/cnn-news/internasional";
-
-    let currentUser = null;
-    let currentPage = 1;
-    let totalResults = 0;
-    let resultsPerPage = 10;
-    let currentSearchResults = [];
+    let userBookmarks = [];
+    let unsubscribeBookmarks = null;
 
     // Theme toggle functionality
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');
       themeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+    });
+
+    // Scroll to top button
+    const scrollToTopBtn = document.getElementById('scrollToTop');
+    scrollToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        scrollToTopBtn.style.display = 'flex';
+      } else {
+        scrollToTopBtn.style.display = 'none';
+      }
     });
 
     function showMessage(message, type = 'success') {
@@ -567,275 +677,241 @@
       try {
         await signOut(auth);
         showMessage('Logout berhasil');
+        if (unsubscribeBookmarks) {
+          unsubscribeBookmarks();
+        }
       } catch (error) {
         showMessage('Logout gagal: ' + error.message, 'error');
       }
     };
 
-    // Fungsi untuk menambahkan bookmark
-    async function addBookmark(item) {
-      if (!currentUser) {
-        showMessage('Anda harus login untuk menambahkan bookmark', 'error');
-        return;
-      }
-
-      try {
-        // Cek apakah bookmark sudah ada
-        const bookmarksQuery = query(
-          collection(db, 'bookmarks'),
-          where('userId', '==', currentUser.uid),
-          where('url', '==', item.link)
-        );
-        
-        const querySnapshot = await getDocs(bookmarksQuery);
-        
-        if (!querySnapshot.empty) {
-          showMessage('Bookmark sudah ada di koleksi Anda', 'error');
-          return;
-        }
-
-        // Tambahkan bookmark baru
-        await addDoc(collection(db, 'bookmarks'), {
-          title: item.title,
-          url: item.link,
-          snippet: item.snippet,
-          displayLink: item.displayLink,
-          userId: currentUser.uid,
-          createdAt: serverTimestamp(),
-          tags: []
+    // Memuat bookmark dari Firestore
+    function loadBookmarks() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      const q = query(
+        collection(db, 'bookmarks'), 
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
+      
+      // Subscribe to realtime updates
+      unsubscribeBookmarks = onSnapshot(q, (snapshot) => {
+        userBookmarks = [];
+        snapshot.forEach((doc) => {
+          userBookmarks.push({
+            id: doc.id,
+            ...doc.data()
+          });
         });
-
-        showMessage('Bookmark berhasil ditambahkan!');
         
-        // Update tampilan tombol bookmark
-        const bookmarkBtn = document.querySelector(`.bookmark-btn[data-url="${item.link}"]`);
-        if (bookmarkBtn) {
-          bookmarkBtn.classList.add('bookmarked');
-          bookmarkBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
-        }
-      } catch (error) {
-        console.error('Error adding bookmark: ', error);
-        showMessage('Gagal menambahkan bookmark: ' + error.message, 'error');
-      }
+        renderBookmarks();
+      }, (error) => {
+        console.error('Error loading bookmarks:', error);
+        showMessage('Gagal memuat bookmark: ' + error.message, 'error');
+      });
     }
 
-    window.performSearch = async function(page = 1) {
-      const queryInput = document.getElementById('searchQuery').value.trim();
-      const startYear = document.getElementById('startYear').value.trim();
-      const endYear = document.getElementById('endYear').value.trim();
-      const resultsList = document.getElementById('resultsList');
-
-      currentPage = page;
-      resultsList.innerHTML = '<p class="loading">Mencari...</p>';
-      document.getElementById('paginationControls').style.display = 'none';
-
-      if (!queryInput) {
-        resultsList.innerHTML = '<p>Masukkan kata kunci untuk memulai pencarian.</p>';
-        return;
-      }
-
-      const startIndex = (page - 1) * resultsPerPage + 1;
-      let searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_CSE_API_KEY}&cx=${GOOGLE_CSE_CX}&q=${encodeURIComponent(queryInput)}&start=${startIndex}`;
-      if (startYear && endYear) searchUrl += `&sort=date:r:${startYear}0101:${endYear}1231`;
-
+    // Mengedit tag bookmark
+    window.editBookmarkTags = async function(bookmarkId, currentTags) {
+      const newTags = prompt("Edit tag (pisahkan dengan koma):", currentTags.join(", "));
+      
+      if (newTags === null) return; // User membatalkan
+      
+      const tags = newTags.split(",")
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+      
       try {
-        const response = await fetch(searchUrl);
-        const data = await response.json();
-        resultsList.innerHTML = '';
-        
-        if (data.items && data.items.length > 0) {
-          currentSearchResults = data.items;
-          totalResults = parseInt(data.searchInformation.totalResults) || 0;
-          
-          data.items.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            card.innerHTML = `
-              <div class="bookmark-container">
-                <button class="bookmark-btn" data-url="${item.link}" onclick="addBookmark(${escapeItemForHTML(item)})">
-                  <i class="far fa-bookmark"></i>
-                </button>
-              </div>
-              <div class="title"><a href="${item.link}" target="_blank">${item.title}</a></div>
-              <div class="url">${item.displayLink}</div>
-              <div class="snippet">${item.snippet}</div>
-            `;
-            resultsList.appendChild(card);
-          });
-
-          // Update status bookmark untuk hasil yang sudah dibookmark
-          if (currentUser) {
-            updateBookmarkStatuses();
-          }
-          
-          // Update pagination controls
-          updatePaginationControls();
-        } else {
-          resultsList.innerHTML = '<p>Tidak ada hasil.</p>';
-        }
+        const bookmarkRef = doc(db, 'bookmarks', bookmarkId);
+        await updateDoc(bookmarkRef, {
+          tags: tags,
+          updatedAt: serverTimestamp()
+        });
+        showMessage('Tag berhasil diperbarui');
       } catch (error) {
-        resultsList.innerHTML = '<p class="error-box">Terjadi kesalahan.</p>';
+        console.error('Error updating bookmark:', error);
+        showMessage('Gagal memperbarui tag: ' + error.message, 'error');
       }
     };
 
-    // Fungsi untuk mengupdate status bookmark
-    async function updateBookmarkStatuses() {
-      if (!currentUser) return;
+    // Menghapus bookmark
+    window.removeBookmark = async function(bookmarkId) {
+      if (confirm('Apakah Anda yakin ingin menghapus bookmark ini?')) {
+        try {
+          await deleteDoc(doc(db, 'bookmarks', bookmarkId));
+          showMessage('Bookmark berhasil dihapus');
+        } catch (error) {
+          console.error('Error deleting bookmark:', error);
+          showMessage('Gagal menghapus bookmark: ' + error.message, 'error');
+        }
+      }
+    };
+
+    // Menampilkan modal tambah bookmark
+    window.showAddBookmarkModal = function() {
+      document.getElementById('addBookmarkModal').style.display = 'flex';
+    };
+
+    // Menutup modal tambah bookmark
+    window.closeAddBookmarkModal = function() {
+      document.getElementById('addBookmarkModal').style.display = 'none';
+      // Reset form
+      document.getElementById('bookmarkTitle').value = '';
+      document.getElementById('bookmarkUrl').value = '';
+      document.getElementById('bookmarkDescription').value = '';
+      document.getElementById('bookmarkTags').value = '';
+    };
+
+    // Menambah bookmark baru
+    window.addNewBookmark = async function() {
+      const title = document.getElementById('bookmarkTitle').value.trim();
+      const url = document.getElementById('bookmarkUrl').value.trim();
+      const snippet = document.getElementById('bookmarkDescription').value.trim();
+      const tagsInput = document.getElementById('bookmarkTags').value.trim();
+      
+      if (!title || !url) {
+        showMessage('Judul dan URL harus diisi', 'error');
+        return;
+      }
+      
+      // Validasi URL
+      try {
+        new URL(url);
+      } catch (e) {
+        showMessage('URL tidak valid', 'error');
+        return;
+      }
+      
+      const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+      
+      const user = auth.currentUser;
+      if (!user) {
+        showMessage('Anda harus login untuk menambah bookmark', 'error');
+        return;
+      }
       
       try {
-        // Ambil semua bookmark pengguna
-        const bookmarksQuery = query(
-          collection(db, 'bookmarks'),
-          where('userId', '==', currentUser.uid)
-        );
-        
-        const querySnapshot = await getDocs(bookmarksQuery);
-        const bookmarkedUrls = [];
-        
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          bookmarkedUrls.push(data.url);
+        await addDoc(collection(db, 'bookmarks'), {
+          userId: user.uid,
+          title: title,
+          url: url,
+          displayLink: extractHostname(url),
+          snippet: snippet,
+          tags: tags,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
         });
         
-        // Update tampilan tombol bookmark
-        const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
-        bookmarkButtons.forEach(btn => {
-          const url = btn.getAttribute('data-url');
-          if (bookmarkedUrls.includes(url)) {
-            btn.classList.add('bookmarked');
-            btn.innerHTML = '<i class="fas fa-bookmark"></i>';
-          }
-        });
+        showMessage('Bookmark berhasil ditambahkan');
+        closeAddBookmarkModal();
       } catch (error) {
-        console.error('Error checking bookmarks: ', error);
+        console.error('Error adding bookmark:', error);
+        showMessage('Gagal menambah bookmark: ' + error.message, 'error');
       }
-    }
+    };
 
-    // Helper function untuk escape item agar aman untuk HTML
-    function escapeItemForHTML(item) {
-      const escapedItem = {};
-      for (const key in item) {
-        if (item.hasOwnProperty(key)) {
-          escapedItem[key] = item[key]
-            .toString()
-            .replace(/'/g, "\\'")
-            .replace(/"/g, '\\"');
-        }
-      }
-      return escapedItem;
-    }
-
-    function updatePaginationControls() {
-      const paginationContainer = document.getElementById('paginationControls');
-      paginationContainer.style.display = 'flex';
-      paginationContainer.innerHTML = '';
-
-      const totalPages = Math.ceil(totalResults / resultsPerPage);
-      const maxVisiblePages = 5;
-      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-      if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-      }
-
-      // Previous button
-      if (currentPage > 1) {
-        const prevLink = document.createElement('a');
-        prevLink.href = '#';
-        prevLink.innerHTML = '&laquo;';
-        prevLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          performSearch(currentPage - 1);
-        });
-        paginationContainer.appendChild(prevLink);
-      }
-
-      // Page numbers
-      for (let i = startPage; i <= endPage; i++) {
-        const pageLink = document.createElement('a');
-        pageLink.href = '#';
-        pageLink.textContent = i;
-        if (i === currentPage) {
-          pageLink.className = 'active';
-        }
-        pageLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          performSearch(i);
-        });
-        paginationContainer.appendChild(pageLink);
-      }
-
-      // Next button
-      if (currentPage < totalPages) {
-        const nextLink = document.createElement('a');
-        nextLink.href = '#';
-        nextLink.innerHTML = '&raquo;';
-        nextLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          performSearch(currentPage + 1);
-        });
-        paginationContainer.appendChild(nextLink);
-      }
-    }
-
-    async function loadNews() {
-      const newsList = document.getElementById('newsList');
-      newsList.innerHTML = `
-        <div class="news-card loading">
-          <div style="height: 160px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-        <div class="news-card loading">
-          <div style="height: 160px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-        <div class="news-card loading">
-          <div style="height: 160px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-      `;
+    // Render daftar bookmark
+    function renderBookmarks() {
+      const bookmarksList = document.getElementById("bookmarksList");
+      bookmarksList.innerHTML = "";
       
-      try {
-        const response = await fetch(NEWS_URL);
-        const data = await response.json();
-        newsList.innerHTML = '';
-        if (data.data && data.data.length > 0) {
-          data.data.slice(0, 6).forEach(newsItem => {
-            const card = document.createElement('div');
-            card.className = 'news-card';
-            const imgUrl = newsItem.image?.large || newsItem.image?.small || newsItem.thumbnail || "https://via.placeholder.com/300x180/cccccc/969696?text=No+Image";
-            card.innerHTML = `
-              <img src="${imgUrl}" alt="${newsItem.title}" class="news-image" onerror="this.src='https://via.placeholder.com/300x180/cccccc/969696?text=No+Image'">
-              <div class="news-content">
-                <div class="news-title"><a href="${newsItem.link}" target="_blank">${newsItem.title}</a></div>
-                <div class="news-snippet">${newsItem.contentSnippet || newsItem.description || ''}</div>
-              </div>
-            `;
-            newsList.appendChild(card);
-          });
+      const searchQuery = document.getElementById("searchBookmarks").value.trim().toLowerCase();
+      const tagFilter = document.getElementById("filterTags").value.trim().toLowerCase();
+      const tagFilters = tagFilter ? tagFilter.split(",").map(t => t.trim()).filter(t => t) : [];
+      
+      // Filter bookmark berdasarkan pencarian dan tag
+      const filteredBookmarks = userBookmarks.filter(bookmark => {
+        // Filter berdasarkan pencarian
+        const matchesSearch = !searchQuery || 
+          (bookmark.title && bookmark.title.toLowerCase().includes(searchQuery)) || 
+          (bookmark.snippet && bookmark.snippet.toLowerCase().includes(searchQuery)) ||
+          (bookmark.url && bookmark.url.toLowerCase().includes(searchQuery));
+        
+        // Filter berdasarkan tag
+        const matchesTag = tagFilters.length === 0 || 
+          (bookmark.tags && tagFilters.some(filterTag => 
+            bookmark.tags.some(itemTag => 
+              itemTag.toLowerCase().includes(filterTag)
+            )
+          ));
+        
+        return matchesSearch && matchesTag;
+      });
+      
+      if (filteredBookmarks.length === 0) {
+        if (userBookmarks.length > 0) {
+          bookmarksList.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-search"></i>
+              <h3>Tidak ada bookmark yang cocok</h3>
+              <p>Coba gunakan kata kunci atau filter yang berbeda</p>
+            </div>
+          `;
         } else {
-          newsList.innerHTML = '<p>Tidak ada berita.</p>';
+          bookmarksList.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-bookmark"></i>
+              <h3>Belum ada bookmark</h3>
+              <p>Bookmark yang Anda simpan akan muncul di sini.</p>
+            </div>
+          `;
         }
-      } catch (error) {
-        newsList.innerHTML = '<p class="error-box">Gagal memuat berita.</p>';
+        return;
+      }
+      
+      filteredBookmarks.forEach(bookmark => {
+        const card = document.createElement("div");
+        card.className = "bookmark-card";
+        
+        card.innerHTML = `
+          <div>
+            <div class="bookmark-title"><a href="${bookmark.url}" target="_blank">${bookmark.title || 'No title'}</a></div>
+            <div class="bookmark-url">${bookmark.displayLink || extractHostname(bookmark.url)}</div>
+            ${bookmark.snippet ? `<div class="bookmark-snippet">${bookmark.snippet}</div>` : ''}
+            ${bookmark.tags && bookmark.tags.length > 0 ? `
+              <div class="bookmark-tags">
+                ${bookmark.tags.map(t => `<span class="tag">#${t}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+          <div class="bookmark-actions">
+            <button onclick="editBookmarkTags('${bookmark.id}', ${JSON.stringify(bookmark.tags || [])})">
+              <i class="fas fa-tags"></i> Edit Tag
+            </button>
+            <button onclick="removeBookmark('${bookmark.id}')" class="danger">
+              <i class="fas fa-trash"></i> Hapus
+            </button>
+          </div>
+        `;
+        
+        bookmarksList.appendChild(card);
+      });
+    }
+
+    // Ekstrak hostname dari URL
+    function extractHostname(url) {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.hostname.replace('www.', '');
+      } catch (e) {
+        return url;
       }
     }
 
+    // Membersihkan filter
+    window.clearFilters = function() {
+      document.getElementById("searchBookmarks").value = "";
+      document.getElementById("filterTags").value = "";
+      renderBookmarks();
+    };
+
+    // Inisialisasi
     onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      const authStatusDiv = document.getElementById('authStatus');
-      const userInfoDiv = document.getElementById('userInfo');
       const loginButton = document.getElementById('loginButton');
+      const userInfoDiv = document.getElementById('userInfo');
+      const authStatusDiv = document.getElementById('authStatus');
       const userAvatar = document.getElementById('userAvatar');
       const userNameEl = document.getElementById('userName');
 
@@ -849,26 +925,27 @@
         loginButton.style.display = 'none';
         userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
         
-        // Update status bookmark jika ada hasil pencarian
-        if (currentSearchResults.length > 0) {
-          updateBookmarkStatuses();
-        }
+        // Load bookmarks
+        loadBookmarks();
       } else {
         authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
         userInfoDiv.style.display = 'none';
         loginButton.style.display = 'block';
         
-        // Reset status bookmark
-        const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
-        bookmarkButtons.forEach(btn => {
-          btn.classList.remove('bookmarked');
-          btn.innerHTML = '<i class="far fa-bookmark"></i>';
-        });
+        // Clear bookmarks list
+        document.getElementById("bookmarksList").innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-bookmark"></i>
+            <h3>Belum ada bookmark</h3>
+            <p>Bookmark yang Anda simpan akan muncul di sini.</p>
+          </div>
+        `;
       }
     });
 
-    // Load news on page load
-    loadNews();
+    // Add event listeners for search and filter
+    document.getElementById("searchBookmarks").addEventListener("input", renderBookmarks);
+    document.getElementById("filterTags").addEventListener("input", renderBookmarks);
   </script>
 </body>
 </html>
