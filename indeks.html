@@ -532,6 +532,40 @@
       gap: 12px;
     }
 
+    /* Perbaikan khusus untuk tombol Google */
+    .google-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .google-login-btn:hover {
+      box-shadow: 0 0 16px rgba(67, 97, 238, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .google-icon {
+      font-size: 1.2rem;
+      background: white;
+      color: #DB4437;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     @media (max-width: 640px) {
       .auth-container {
         flex-direction: column;
@@ -543,12 +577,26 @@
       .login-button-container {
         width: 100%;
         justify-content: flex-start;
+        flex-direction: column;
+        align-items: stretch;
       }
       
-      #loginButton {
+      .google-login-btn {
         width: 100%;
         justify-content: center;
       }
+      
+      #bookmarkBtn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Perbaikan untuk tampilan judul dan status */
+    .app-title-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
   </style>
 </head>
@@ -557,8 +605,9 @@
     <div class="topbar">
       <div class="app-title">
         <div class="logo">🔍</div>
-        <div class="auth-status-container">
-          <h1>WHARSA - Jurnal & Berita</h1>
+        <div class="app-title-content">
+          <h1>WHARSA</h1>
+          <br><h1>Wahasa Academic Refrence Search Assistant</h1>
           <div id="authStatus" class="auth-status">
             <span class="offline-dot"></span>
             <span>Status: Belum login</span>
@@ -576,10 +625,11 @@
           <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
         </div>
         <div class="login-button-container">
-          <button id="loginButton" onclick="loginWithGoogle()" class="primary">
-            <i class="fab fa-google"></i> Login dengan Google
-          </button>
-          <a href="bookmarks.html" class="btn">
+          <a id="loginButton" onclick="loginWithGoogle()" class="google-login-btn">
+            <span class="google-icon">G</span>
+            <span>Login</span>
+          </a>
+          <a href="bookmarks.html" class="btn" id="bookmarkBtn">
             <i class="fas fa-bookmark"></i> Bookmark
           </a>
         </div>
@@ -599,14 +649,12 @@
 
     <!-- Shortcut Buttons Section -->
     <div class="shortcut-section">
-      <a href="https://www.example.com/sekolah" target="_blank" class="btn">
-        <i class="fas fa-school"></i> Web Sekolah
+      <a href="https://www.sma-waha1.sch.id/" target="_blank" class="btn">
+        <i class="fas fa-school"></i> Website sekolah
       </a>
-      <a href="https://www.example.com/perpustakaan" target="_blank" class="btn">
-        <i class="fas fa-book"></i> Perpustakaan Sekolah
+      <a href="https://digilibsmawh1.perpustakaan.co.id/home.ks" target="_blank" class="btn">
+        <i class="fas fa-book"></i> Perpustakaan
       </a>
-      <a href="https://www.example.com/jurnal" target="_blank" class="btn">
-        <i class="fas fa-book-open"></i> Jurnal Akademik
       </a>
     </div>
 
@@ -1020,7 +1068,7 @@
       } else {
         authStatusDiv.innerHTML = '<span class="offline-dot"></span><span>Status: Belum login</span>';
         userInfoDiv.style.display = 'none';
-        loginButton.style.display = 'block';
+        loginButton.style.display = 'flex';
         
         // Reset status bookmark
         const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
