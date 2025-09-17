@@ -834,7 +834,7 @@
             </div>
             <img id="userAvatar" class="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
           </div>
-          <button onclick="logout()" class="btn">Logout</button>
+          <!-- ❌ Logout desktop dihapus -->
         </div>
         <div class="login-button-container">
           <a id="loginButton" onclick="loginWithGoogle()" class="google-login-btn">
@@ -848,7 +848,7 @@
       </div>
     </div>
 
-    <!-- Container untuk tampilan mobile -->
+    <!-- Container tampilan mobile -->
     <div id="mobileUserContainer" class="mobile-user-container" style="display: none;">
       <div class="mobile-user-profile">
         <img id="mobileUserAvatar" class="mobile-user-avatar" src="https://via.placeholder.com/64" alt="Avatar">
@@ -907,27 +907,7 @@
         <i class="fas fa-newspaper"></i> Berita Internasional Terbaru
       </h2>
       <div id="newsList" class="news-grid">
-        <div class="news-card loading">
-          <div style="height: 180px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-        <div class="news-card loading">
-          <div style="height: 180px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
-        <div class="news-card loading">
-          <div style="height: 180px; background: var(--border); border-radius: var(--radius) var(--radius) 0 0;"></div>
-          <div class="news-content">
-            <div style="height: 20px; background: var(--border); border-radius: var(--radius-sm); margin-bottom: 10px;"></div>
-            <div style="height: 16px; background: var(--border); border-radius: var(--radius-sm); width: 80%;"></div>
-          </div>
-        </div>
+        <!-- Placeholder loading -->
       </div>
     </div>
   </div>
@@ -935,7 +915,6 @@
   <button class="fab" id="scrollToTop">
     <i class="fas fa-arrow-up"></i>
   </button>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
